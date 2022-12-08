@@ -79,7 +79,7 @@ console.log("Lat limits " + limits.latMin + " " + limits.latMax);
 console.log("Lon limits " + limits.lonMin + " " + limits.lonMax);
 console.log("JT limits  " + limits.JTmin + " " + limits.JTmax);
 
-let {contoursMag, contoursUmbra, derContours} = createContours(limits, 0.25, 2/1440);
+let {contoursMag, contoursUmbra, derContours} = createContours(limits, 1.0, 2/1440);
 
 const centralLine = computeCentralLine(limits, 1/1440);
 const riseSetPoints = computeRiseSet(limits, 1/1440);
@@ -188,13 +188,7 @@ function drawScene(time)
     const osvSunTod = orbitsjs.coordPefTod(osvSunEfi, nutPar);
     const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JT, nutPar);
 
-    const rASun = orbitsjs.deg2Rad(orbitsjs.atan2d(osvSunTod.r[1], osvSunTod.r[0]));
-    const declSun = orbitsjs.deg2Rad(orbitsjs.asind(osvSunTod.r[2] / orbitsjs.norm(osvSunTod.r)));
-    const LST = orbitsjs.deg2Rad(orbitsjs.timeGast(JT, nutPar));
-
-    //console.log(JT + " " + rASun + " " + declSun + " " + LST);
-    //console.log(orbitsjs.norm(osvSunEfi.r));
-    drawEarth(matrix, rASun, declSun, LST, JT, nutPar, osvMoonEfi.r, osvSunEfi.r);
+    earthShaders.draw(matrix, true, false, true, true, osvMoonEfi.r, osvSunEfi.r);
 
     drawDistant(osvSunEfi.r, 695700000.0 * 2.0, matrix, true);
     drawDistant(osvMoonEfi.r, 1737400.0 * 2.0, matrix, true);
