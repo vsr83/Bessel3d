@@ -79,7 +79,7 @@ console.log("Lat limits " + limits.latMin + " " + limits.latMax);
 console.log("Lon limits " + limits.lonMin + " " + limits.lonMax);
 console.log("JT limits  " + limits.JTmin + " " + limits.JTmax);
 
-let {contoursMag, contoursUmbra, derContours} = createContours(limits, 1.0, 2/1440);
+let {contoursMag, contoursUmbra, derContours} = createContours(limits, 0.25, 2/1440);
 
 const centralLine = computeCentralLine(limits, 1/1440);
 const riseSetPoints = computeRiseSet(limits, 1/1440);
