@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="shaders/LineShaders.js"></script>
+        <script src="shaders/PlanetShaders.js"></script>
+        <script src="shaders/PointShaders.js"></script>
+        <script src="imports/m4.js"></script>
+        <script src="imports/WebGLUtils.js"></script>
+
+        <script src="imports/orbits_js.js"></script>
+        <script src="imports/dat.gui.min.js"></script>
+
+        <link rel="stylesheet" href="app.css">
+    </head>
+    <body style="background: black; color: white; overflow-y: hidden; overflow-x: hidden">
+        <div class="container" id="container">
+            <canvas id="canvas"></canvas>
+
+            <div id="targetContainer"><div id="targetText"></div></div>
+            <div id="dateContainer"><div id="dateText"><p>LOADING</p></div></div>
+            <div id="coordContainer"><div id="coordText"><p>LOADING</p></div></div>
+
+            <script src="visualization/Contours.js"></script>
+            <script src="visualization/Lines.js"></script>
+            <script src="app.js"></script>
+            <script src="GUI/OrbitControls.js"></script>
+        </div>
+    </body>
+</html>
