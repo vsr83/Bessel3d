@@ -203,6 +203,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     highp float magMax = 0.0;
     highp float totMax = 0.0;
+    highp float indMax = 0.0;
     for (int j = 0; j < NUM_TIMESTEPS; j++)
     {
         highp vec3 rEfiMoon = u_moonPosition[j];
@@ -212,6 +213,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
         vec2 mag = eclipseMagnitude(rEnuSun, rEnuMoon);
 
+        if (mag.x > magMax)
+        {
+            indMax = float(j);
+        }
         magMax = max(magMax, mag.x);
         totMax = max(totMax, mag.y);
     }
@@ -219,7 +224,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     float byte1 = floor(magMax * 128.0);
     float byte2 = floor((magMax - byte1/128.0) * 32768.0);
 
-    fragColor = vec4(byte1/255.0, byte2/255.0, totMax, 1.0);
+    fragColor = vec4(byte1/255.0, byte2/255.0, indMax / 255.0, 1.0);
 }
 
 void main() 
@@ -342,7 +347,7 @@ function computeMaxMag(lat, lon, posArrayMoon, posArraySun)
         const osvSunEfi = {r : posArraySun[indPos], v : [0, 0, 0], JT : 0};
         const rEnuSun = orbitsjs.coordEfiEnu(osvSunEfi, lat, lon, 0.0).r;
         const rEnuMoon = orbitsjs.coordEfiEnu(osvMoonEfi, lat, lon, 0.0).r;
-        magMax = Math.max(magMax, orbitsjs.eclipseMagnitude(rEnuSun, rEnuMoon));    
+        magMax = Math.max(magMax, orbitsjs.eclipseMagnitude(rEnuSun, rEnuMoon).mag);    
     }
 
     return magMax;
@@ -373,6 +378,10 @@ function computeContours(gl, program)
 
     let posArrayMoon = [];
     let posArraySun = [];
+
+    let posArrayMoonDelta = [];
+    let posArraySunDelta = [];
+
     for (let indStep = 0; indStep < 256; indStep++)
     {
         const JT = JTstart + JTstep * indStep;
@@ -398,6 +407,20 @@ function computeContours(gl, program)
         const osvMoonPef = orbitsjs.coordTodPef({r : moonPosToD, v : [0, 0, 0], JT : JT});
         const osvMoonEfi = orbitsjs.coordPefEfi(osvMoonPef, 0, 0);
 
+        const deltaMoon = [];
+        const deltaSun = [];
+        for (let deltaJT = -4/1440; deltaJT <= 4/1440; deltaJT += 2/1440)
+        {
+            const JTdelta = JT + deltaJT;
+            const osvSunEfi = orbitsjs.computeOsvSunEfi(JTdelta);
+            const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JTdelta);
+
+            deltaMoon.push(osvMoonEfi.r);
+            deltaSun.push(osvSunEfi.r);
+        }
+        posArrayMoonDelta.push(deltaMoon);
+        posArraySunDelta.push(deltaSun);
+
         //console.log(osvMoonEfi);
         osvMoonEfi.r = orbitsjs.vecMul(osvMoonEfi.r, 1.0);
         osvSunEfi.r = orbitsjs.vecMul(osvSunEfi.r, 1.0);
@@ -416,6 +439,9 @@ function computeContours(gl, program)
         posArraySun.push(osvSunEfi.r[1]);
         posArraySun.push(osvSunEfi.r[2]);
     }
+    //console.log(posArrayMoonDelta);
+    //console.log(posArraySunDelta);
+
 
     //console.log(posArraySun);
     gl.uniform3fv(sunPositionLocation, posArraySun);
@@ -424,7 +450,6 @@ function computeContours(gl, program)
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-
 
     var pixels = new Uint8Array(canvasGlHidden.width * canvasGlHidden.height * 4);
     gl.readPixels(0, 0, canvasGlHidden.width, canvasGlHidden.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
@@ -447,9 +472,10 @@ function computeContours(gl, program)
         {
             const index = ((719 - indLat) * 1440 + indLon) * 4;
             //s = s + pixels[index];
-            const value = pixels[index] / 128.0 + pixels[index + 1] / 32768.0;
-            const lat = -90 + indLat * 0.25;
-            const lon = -180 + indLon * 0.25;
+            //const value = pixels[index] / 128.0 + pixels[index + 1] / 32768.0;
+            const value = pixels[index + 2] / 255.0;
+            const lat = -90 + (indLat-1) * 0.25;
+            const lon = -180 + (indLon-1) * 0.25;
 
             if (value > 0) 
             {
@@ -501,10 +527,29 @@ function computeContours(gl, program)
         let arrayLon = [];
         for (let indLon = limits.indLonMin; indLon <= limits.indLonMax; indLon++)
         {
+            const lat = -90 + indLat * 0.25;
+            const lon = -180 + indLon * 0.25;
+
             const index = ((719 - indLat) * 1440 + indLon) * 4;
             //s = s + pixels[index];
-            const value = pixels[index] / 128.0 + pixels[index + 1] / 32768.0;
+            //const value = pixels[index] / 128.0 + pixels[index + 1] / 32768.0;
+            const indPos = Math.floor(pixels[index + 2]);
 
+            const JT = JTstart + JTstep * indPos;
+
+            const rMoonEfi = [posArrayMoon[indPos*3], posArrayMoon[indPos*3+1], posArrayMoon[indPos*3+2]];
+            const rSunEfi = [posArraySun[indPos*3], posArraySun[indPos*3+1], posArraySun[indPos*3+2]];
+            const osvMoonEfi = {r : rMoonEfi, v : [0, 0, 0], JT : 0};
+            const osvSunEfi = {r : rSunEfi, v : [0, 0, 0], JT : 0};
+            const rEnuSun = orbitsjs.coordEfiEnu(osvSunEfi, lat, lon, 0.0).r;
+            const rEnuMoon = orbitsjs.coordEfiEnu(osvMoonEfi, lat, lon, 0.0).r;
+            //const value = orbitsjs.eclipseMagnitude(rEnuSun, rEnuMoon);    
+    
+            const value = computeMaxMag(lat, lon, posArrayMoonDelta[indPos], posArraySunDelta[indPos]);
+           // console.log(lat);
+
+            //console.log(value.mag);
+            //console.log(value);
             arrayLon.push(value);
             //s = s + value;
             //if (indLon < limits.indLonMax || indLat < limits.indLatMax) s += ',';
@@ -513,31 +558,6 @@ function computeContours(gl, program)
     }
     //s += ";";
     //console.log(contourArrayOut);
-
-    const contours = orbitsjs.createContours(limits.lonMin, limits.lonMax, 
-        limits.latMin, limits.latMax, 0.25, contourArrayOut,  [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
-
-    for (let indValues = 0; indValues < Object.keys(contours).length; indValues++)
-    {
-        const value = Object.keys(contours)[indValues];
-        const lines = contours[value];
-    
-        const points = [];
-        for (let indLine = 0; indLine < lines.length; indLine++)
-        {
-            const line = lines[indLine];
-
-            const latStart = line[0][0];
-            const lonStart = line[0][1];
-
-            console.log(indLine);
-
-            computeMaxMag(latStart, lonStart, posArrayMoon, posArraySun);
-            computeMaxMag(latStart, lonStart, posArrayMoon, posArraySun);
-            computeMaxMag(latStart, lonStart, posArrayMoon, posArraySun);
-            computeMaxMag(latStart, lonStart, posArrayMoon, posArraySun);
-        }
-    }
 
     console.log(limits);
 

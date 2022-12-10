@@ -46,6 +46,7 @@ lineShaders.init();
 pointShaders = new PointShaders(gl);
 pointShaders.init();
 
+var startTime = performance.now()
 var canvasGlHidden = document.getElementById("canvasGLHidden");
 const glHidden = canvasGlHidden.getContext("webgl2", {preserveDrawingBuffer: true});
 const contoursProgram = compileProgramContours(glHidden);
@@ -53,7 +54,10 @@ initContoursGpu(glHidden, contoursProgram);
 let {gpuLimits, gpuGridData} = computeContours(glHidden, contoursProgram);
 const contoursGpu = orbitsjs.createContours(gpuLimits.lonMin, gpuLimits.lonMax, 
     gpuLimits.latMin, gpuLimits.latMax, 0.25, gpuGridData,  [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
-console.log(contoursGpu);
+    var endTime = performance.now()
+
+console.log(`Contour creation took ${endTime - startTime} milliseconds`)
+//    console.log(contoursGpu);
 
 // 2d and WebGL canvases stacked top of each other.
 //var canvasJs = document.getElementById("canvasJS");
@@ -95,12 +99,13 @@ console.log("Lat limits " + limits.latMin + " " + limits.latMax);
 console.log("Lon limits " + limits.lonMin + " " + limits.lonMax);
 console.log("JT limits  " + limits.JTmin + " " + limits.JTmax);
 
-let {contoursMag, contoursUmbra, derContours} = createContours(limits, 1.0, 2/1440);
+let {contoursMag, contoursUmbra, derContours} = createContours(limits, 0.25, 1/1440);
 
 const centralLine = computeCentralLine(limits, 1/1440);
 const riseSetPoints = computeRiseSet(limits, 1/1440);
 const contourPoints = contourToPoints(contoursMag);
 const umbraPoints = contourToPoints(contoursUmbra)[0];
+
 const contourPointsGpu = contourToPoints(contoursGpu);
 
 requestAnimationFrame(drawScene);
