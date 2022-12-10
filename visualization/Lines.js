@@ -160,8 +160,10 @@ function drawEcliptic(matrix, nutPar, JT)
  *     Current longitude on the central line.
  * @param {*} rECEFMoon 
  *     Position of the moon in the ECEF frame.
+ * @param {*} centralLine 
+ *     The central line.
  */
-function drawCentralLine(matrix, lat, lon, rECEFMoon)
+function drawCentralLine(matrix, lat, lon, rECEFMoon, centralLine)
 {
     const D = 0.5 * zFar;
     const p = [];
@@ -179,5 +181,20 @@ function drawCentralLine(matrix, lat, lon, rECEFMoon)
 
     lineShaders.colorOrbit = [255, 255, 255];
     lineShaders.setGeometry(centralLine);
+    lineShaders.draw(matrix);
+}
+
+/**
+ * Draw rise and set points.
+ * 
+ * @param {*} matrix 
+ *      The view matrix.
+ * @param {*} riseSetPoints 
+ *      The rise and set points.
+ */
+function drawRiseSet(matrix, riseSetPoints)
+{
+    lineShaders.colorOrbit = [255, 127, 127];
+    lineShaders.setGeometry(riseSetPoints);
     lineShaders.draw(matrix);
 }

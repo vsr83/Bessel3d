@@ -826,8 +826,8 @@ class PlanetShaders
         var xmlHTTP = new XMLHttpRequest();
         xmlHTTP.onreadystatechange = function()
         {
-            console.log("readyState: " + this.readyState);
-            console.log("status:     " + this.status);
+            //console.log("readyState: " + this.readyState);
+            //console.log("status:     " + this.status);
         
             if (this.readyState == 4 && this.status == 200)
             {
@@ -865,7 +865,7 @@ class PlanetShaders
                 }
                 console.log("Added " + numPointsTotal + " points");
                 instance.polygons = polygons;
-                console.log(instance.polygons);
+                //console.log(instance.polygons);
                 instance.loadMapPolygons();
             }
         }

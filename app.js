@@ -9,9 +9,6 @@ var pointShaders = null;
 var a = 6378.1370;
 var b = 6356.75231414;
 
-// Sidereal angle.
-var LST = 0;
-
 // Camera distance from Earth.
 var distance = 5.0 * a;
 const zFar = 1000000;
@@ -46,67 +43,45 @@ lineShaders.init();
 pointShaders = new PointShaders(gl);
 pointShaders.init();
 
-var startTime = performance.now()
 var canvasGlHidden = document.getElementById("canvasGLHidden");
 const glHidden = canvasGlHidden.getContext("webgl2", {preserveDrawingBuffer: true});
 const contoursProgram = compileProgramContours(glHidden);
 initContoursGpu(glHidden, contoursProgram);
-let {gpuLimits, gpuGridData} = computeContours(glHidden, contoursProgram);
-const contoursGpu = orbitsjs.createContours(gpuLimits.lonMin, gpuLimits.lonMax, 
-    gpuLimits.latMin, gpuLimits.latMax, 0.25, gpuGridData,  [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
-    var endTime = performance.now()
-
-console.log(`Contour creation took ${endTime - startTime} milliseconds`)
-//    console.log(contoursGpu);
-
-// 2d and WebGL canvases stacked top of each other.
-//var canvasJs = document.getElementById("canvasJS");
-//var contextJs = canvasJs.getContext("2d");
-
-//var glHidden = canvasGlHidden.getContext("webgl2", {preserveDrawingBuffer: true});
-
 
 let JTstart = orbitsjs.timeJulianTs(new Date()).JT;
-let JTeclipse = orbitsjs.timeJulianTs(new Date("2019-12-26T05:18:53Z")).JT;
-
-/**
- * Transform from spherical to Cartesian coordinates in an inertial frame.
- * 
- * @param {*} R 
- *      Distance.
- * @param {*} DE 
- *      Declination (deg).
- * @param {*} RA 
- *      Right-ascension (deg).
- * @returns 3d array of coordinates.
- */
- function sphIneCart(R, DE, RA)
- {
-     return [R * orbitsjs.cosd(DE) * orbitsjs.cosd(RA), 
-             R * orbitsjs.cosd(DE) * orbitsjs.sind(RA), 
-             R * orbitsjs.sind(DE)];
- }
- 
-const gridSize = 0.25;
 
 
 const listEclipses = orbitsjs.solarEclipses(2019.75, 2019);
 console.log(listEclipses);
 const eclipse = listEclipses[0];
-const limits = computeLimits(eclipse, 2.0, 5.0/1440.0);
 
-console.log("Lat limits " + limits.latMin + " " + limits.latMax);
-console.log("Lon limits " + limits.lonMin + " " + limits.lonMax);
-console.log("JT limits  " + limits.JTmin + " " + limits.JTmax);
+var startTime = performance.now()
+const gridSize = 0.25;
+const limits = {JTmin : eclipse.JTmax - 5/24, JTmax : eclipse.JTmax + 5/24};
+let {gpuLimits, gpuGridData} = computeContours(glHidden, contoursProgram, limits);
+const contoursGpu = orbitsjs.createContours(gpuLimits.lonMin, gpuLimits.lonMax, 
+    gpuLimits.latMin, gpuLimits.latMax, gridSize, gpuGridData, [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
+var endTime = performance.now()
+console.log(`Contour creation took ${endTime - startTime} milliseconds`)
 
-let {contoursMag, contoursUmbra, derContours} = createContours(limits, 0.25, 1/1440);
+//const limits = gpuLimits;
+limits.lonMin = gpuLimits.lonMin;
+limits.lonMax = gpuLimits.lonMax;
+limits.latMin = gpuLimits.latMin;
+limits.latMax = gpuLimits.latMax;
+limits.temporalRes = 1/1440;
 
+startTime = performance.now()
+let derContours = createDerContours(limits, 1.0, 1/1440);
+endTime = performance.now()
+console.log(`Contour creation took ${endTime - startTime} milliseconds`)
+
+startTime = performance.now()
 const centralLine = computeCentralLine(limits, 1/1440);
 const riseSetPoints = computeRiseSet(limits, 1/1440);
-const contourPoints = contourToPoints(contoursMag);
-const umbraPoints = contourToPoints(contoursUmbra)[0];
-
 const contourPointsGpu = contourToPoints(contoursGpu);
+endTime = performance.now()
+console.log(`line creation took ${endTime - startTime} milliseconds`)
 
 requestAnimationFrame(drawScene);
 
@@ -119,6 +94,7 @@ function drawScene(time)
         requestAnimationFrame(drawScene);
         return;
     }
+    drawing = true;
 
     canvas.width = document.documentElement.clientWidth;
     canvas.height = document.documentElement.clientHeight;
@@ -169,11 +145,11 @@ function drawScene(time)
         timeControls.secondControl.setValue(today.getSeconds());*/
     }
     //const JT = orbitsjs.timeJulianTs(today).JT + (JTeclipse - JTstart);
-    const JT = 240.0*(orbitsjs.timeJulianTs(today).JT - JTstart) + JTeclipse - 4/24;
+    const JT = 240.0*(orbitsjs.timeJulianTs(today).JT - JTstart) + eclipse.JTmax - 4/24;
     const T = (JT - 2451545.0)/36525.0;
     const nutPar = orbitsjs.nutationTerms(T);
 
-    if (JT > JTeclipse + 4/24)
+    if (JT > eclipse.JTmax + 4/24)
     {
         JTstart = orbitsjs.timeJulianTs(today).JT;
     }
@@ -214,11 +190,11 @@ function drawScene(time)
 
     drawDistant(osvSunEfi.r, 695700000.0 * 2.0, matrix, true);
     drawDistant(osvMoonEfi.r, 1737400.0 * 2.0, matrix, true);
-    drawCentralLine(matrix, wgs84.lat, wgs84.lon, osvMoonEfi.r);
-
+    drawCentralLine(matrix, wgs84.lat, wgs84.lon, osvMoonEfi.r, centralLine);
+    drawRiseSet(matrix, riseSetPoints);
     drawEcliptic(matrix, nutPar, JT);
     drawEquator(matrix);
-    drawContours(matrix);
+    drawContours(matrix, contourPointsGpu, derContours);
 
     // Call drawScene again next frame
     requestAnimationFrame(drawScene);
@@ -328,10 +304,6 @@ function drawDistant(rEFI, rObject, matrix, drawSub)
 
     const rSphere = D * orbitsjs.tand(angDiam / 2);
     const scale = rSphere / a;
-
-    //const targetLat = orbitsjs.asind(rEFI[2] / orbitsjs.norm(rEFI));
-    //const targetLon = orbitsjs.atan2d(rEFI[1], rEFI[0]);
-    //const targetPos = orbitsjs.coordWgs84Efi(targetLat, targetLon, D);
 
     const targetPos = orbitsjs.vecMul(rEFI, D / orbitsjs.norm(rEFI));
 

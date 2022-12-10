@@ -353,16 +353,27 @@ function computeMaxMag(lat, lon, posArrayMoon, posArraySun)
     return magMax;
 }
 
-function computeContours(gl, program)
+/**
+ * Compute grid values for the Solar Eclipse magnitude optimized
+ * with a fragment shader.
+ * 
+ * @param {*} gl
+ *      Reference to the WebGL2 context. 
+ * @param {*} program 
+ *      The program.
+ * @param {*} limitsIn
+ *      Limits with start and end times of the eclipse. 
+ * @returns Object with limits and grid data.
+ */
+function computeContours(gl, program, limitsIn)
 {
     gl.useProgram(program);
     // Adjust the canvas height according to the body size and the height of the time label.
     var body = document.getElementsByTagName('body')[0];
 
-    canvasGlHidden.width = 1440; //document.documentElement.clientWidth;
-    canvasGlHidden.height = 720; //document.documentElement.clientHeight;
+    canvasGlHidden.width = 1440;
+    canvasGlHidden.height = 720;
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    //gl.viewport(0, 0, 720, 360);
 
     // Update canvas size uniform.
     var resolutionLocation = gl.getUniformLocation(program, "u_resolution");
@@ -372,13 +383,14 @@ function computeContours(gl, program)
     var moonPositionLocation = gl.getUniformLocation(program, "u_moonPosition");
 
     const lightTimeJT = 1.495978707e8 / (3e5 * 86400.0);
-    const JTstart = 2458843.6076504565;
-    const JTend   = 2458843.8368171095;
+    const JTstart = limitsIn.JTmin;
+    const JTend   = limitsIn.JTmax;
+    const T = (JTstart - 2451545.0)/36525.0;
+    const nutPar = orbitsjs.nutationTerms(T);
     const JTstep  = (JTend - JTstart) / 255;
 
     let posArrayMoon = [];
     let posArraySun = [];
-
     let posArrayMoonDelta = [];
     let posArraySunDelta = [];
 
@@ -398,38 +410,22 @@ function computeContours(gl, program)
             JT : osvEarth.JT
         };
 
-        // Transform the positions of the Sun and the Moon to the EFI frame:
-        const osvSunJ2000 = orbitsjs.coordEclEq(osvSunEcl);
-        const osvSunMod = orbitsjs.coordJ2000Mod(osvSunJ2000);
-        const osvSunTod = orbitsjs.coordModTod(osvSunMod);
-        const osvSunPef = orbitsjs.coordTodPef(osvSunTod);
-        const osvSunEfi = orbitsjs.coordPefEfi(osvSunPef, 0, 0);
-        const osvMoonPef = orbitsjs.coordTodPef({r : moonPosToD, v : [0, 0, 0], JT : JT});
-        const osvMoonEfi = orbitsjs.coordPefEfi(osvMoonPef, 0, 0);
+        const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JT, nutPar)
+        const osvSunEfi = orbitsjs.computeOsvSunEfi(JT, nutPar)
 
         const deltaMoon = [];
         const deltaSun = [];
         for (let deltaJT = -4/1440; deltaJT <= 4/1440; deltaJT += 2/1440)
         {
             const JTdelta = JT + deltaJT;
-            const osvSunEfi = orbitsjs.computeOsvSunEfi(JTdelta);
-            const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JTdelta);
+            const osvSunEfi = orbitsjs.computeOsvSunEfi(JTdelta, nutPar);
+            const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JTdelta, nutPar);
 
             deltaMoon.push(osvMoonEfi.r);
             deltaSun.push(osvSunEfi.r);
         }
         posArrayMoonDelta.push(deltaMoon);
         posArraySunDelta.push(deltaSun);
-
-        //console.log(osvMoonEfi);
-        osvMoonEfi.r = orbitsjs.vecMul(osvMoonEfi.r, 1.0);
-        osvSunEfi.r = orbitsjs.vecMul(osvSunEfi.r, 1.0);
-        const angularDistance = orbitsjs.acosd(orbitsjs.dot(osvMoonEfi.r, osvSunEfi.r) / (orbitsjs.norm(osvMoonEfi.r) * orbitsjs.norm(osvSunEfi.r)));
-        //console.log(angularDistance);
-
-        //posArray.push(1 / 256);
-        //posArray.push(1 / 512);
-        //posArray.push(1 / 1024);
 
         posArrayMoon.push(osvMoonEfi.r[0]);
         posArrayMoon.push(osvMoonEfi.r[1]);
@@ -439,11 +435,7 @@ function computeContours(gl, program)
         posArraySun.push(osvSunEfi.r[1]);
         posArraySun.push(osvSunEfi.r[2]);
     }
-    //console.log(posArrayMoonDelta);
-    //console.log(posArraySunDelta);
 
-
-    //console.log(posArraySun);
     gl.uniform3fv(sunPositionLocation, posArraySun);
     gl.uniform3fv(moonPositionLocation, posArrayMoon);
 
@@ -453,7 +445,6 @@ function computeContours(gl, program)
 
     var pixels = new Uint8Array(canvasGlHidden.width * canvasGlHidden.height * 4);
     gl.readPixels(0, 0, canvasGlHidden.width, canvasGlHidden.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    //console.log(pixels);
 
     let limits = {
         latMin : 361, 
@@ -471,8 +462,6 @@ function computeContours(gl, program)
         for (let indLon = 0; indLon < 1440; indLon++)
         {
             const index = ((719 - indLat) * 1440 + indLon) * 4;
-            //s = s + pixels[index];
-            //const value = pixels[index] / 128.0 + pixels[index + 1] / 32768.0;
             const value = pixels[index + 2] / 255.0;
             const lat = -90 + (indLat-1) * 0.25;
             const lon = -180 + (indLon-1) * 0.25;
@@ -519,8 +508,6 @@ function computeContours(gl, program)
         limits.indLatMax++;
     }
 
-    //let s = "";
-
     contourArrayOut = [];
     for (let indLat = limits.indLatMin; indLat <= limits.indLatMax; indLat++)
     {
@@ -531,47 +518,23 @@ function computeContours(gl, program)
             const lon = -180 + indLon * 0.25;
 
             const index = ((719 - indLat) * 1440 + indLon) * 4;
-            //s = s + pixels[index];
-            //const value = pixels[index] / 128.0 + pixels[index + 1] / 32768.0;
+            const valueMag = pixels[index] / 128.0 + pixels[index + 1] / 32768.0;
             const indPos = Math.floor(pixels[index + 2]);
 
             const JT = JTstart + JTstep * indPos;
-
-            const rMoonEfi = [posArrayMoon[indPos*3], posArrayMoon[indPos*3+1], posArrayMoon[indPos*3+2]];
-            const rSunEfi = [posArraySun[indPos*3], posArraySun[indPos*3+1], posArraySun[indPos*3+2]];
-            const osvMoonEfi = {r : rMoonEfi, v : [0, 0, 0], JT : 0};
-            const osvSunEfi = {r : rSunEfi, v : [0, 0, 0], JT : 0};
-            const rEnuSun = orbitsjs.coordEfiEnu(osvSunEfi, lat, lon, 0.0).r;
-            const rEnuMoon = orbitsjs.coordEfiEnu(osvMoonEfi, lat, lon, 0.0).r;
-            //const value = orbitsjs.eclipseMagnitude(rEnuSun, rEnuMoon);    
     
-            const value = computeMaxMag(lat, lon, posArrayMoonDelta[indPos], posArraySunDelta[indPos]);
-           // console.log(lat);
-
-            //console.log(value.mag);
-            //console.log(value);
+            let value = 0.0;
+            if (valueMag > 0.0)
+            {
+                value = computeMaxMag(lat, lon, posArrayMoonDelta[indPos], posArraySunDelta[indPos]);
+            }
             arrayLon.push(value);
-            //s = s + value;
-            //if (indLon < limits.indLonMax || indLat < limits.indLatMax) s += ',';
         }
         contourArrayOut.push(arrayLon);
     }
-    //s += ";";
-    //console.log(contourArrayOut);
-
-    console.log(limits);
 
     return {gpuLimits : limits, gpuGridData : contourArrayOut};
 }
-
-
-//var startTime = performance.now()
-//initContoursGpu();
-//computeContours();
-//var endTime = performance.now()
-
-//console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
-
 
 /**
  * Compute limits for the Penumbral path.
@@ -639,7 +602,7 @@ function contourToPoints(contours)
 }
 
 /**
- * Create contours for magnitude, umbra and maximums at specific moments.
+ * Create contours maximums at specific moments.
  * 
  * @param {*} limits 
  *      Limits for the brute force computation.
@@ -649,22 +612,10 @@ function contourToPoints(contours)
  *      The temperal resolution in Julian days.
  * @returns Object with contours.
  */
-function createContours(limits, spatialRes, temporalRes)
+function createDerContours(limits, spatialRes, temporalRes)
 {
-    const gridData = orbitsjs.eclipseMagGrid(limits.JTmin - 10/1440, limits.JTmax + 10/1440,
-                                             temporalRes, 
-                                             limits.lonMin-5, limits.lonMax+5, 
-                                             limits.latMin-5, limits.latMax+5, spatialRes);
-
-    const contoursMag = orbitsjs.createContours(limits.lonMin-5, limits.lonMax+5, 
-                    limits.latMin-5, limits.latMax+5, 
-                    spatialRes, gridData.magArray, 
-                    [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
-
-    const contoursUmbra = orbitsjs.createContours(limits.lonMin-5, limits.lonMax+5, 
-                        limits.latMin-5, limits.latMax+5, 
-                        spatialRes, gridData.inUmbraArray, 
-                        [0.99], [100.0]);
+    const contoursMag = [];
+    const contoursUmbra = [];
 
     const timeGregMin = orbitsjs.timeGregorian(limits.JTmin);
     const timeGregMax = orbitsjs.timeGregorian(limits.JTmax);
@@ -702,33 +653,35 @@ function createContours(limits, spatialRes, temporalRes)
         derContours.push(points);
     }
     
-    return {
-        contoursMag : contoursMag, 
-        contoursUmbra : contoursUmbra, 
-        derContours : derContours
-    };
+    return derContours;
 }
 
-function drawContours(matrix)
+/**
+ * Draw contours.
+ * 
+ * @param {*} matrix
+ *      The view matrix. 
+ * @param {*} contourPointsGpu 
+ *      The contour points from the GPU computation.
+ * @param {*} derContours 
+ *      The maximum line contours.
+ */
+function drawContours(matrix, contourPointsGpu, derContours)
 {
-    lineShaders.colorOrbit = [255, 127, 127];
-    lineShaders.setGeometry(riseSetPoints);
-    lineShaders.draw(matrix);
+    //lineShaders.colorOrbit = [255, 0, 0];
+    //lineShaders.setGeometry(umbraPoints);
+    //lineShaders.draw(matrix);
 
-    lineShaders.colorOrbit = [255, 0, 0];
-    lineShaders.setGeometry(umbraPoints);
-    lineShaders.draw(matrix);
-
-    lineShaders.colorOrbit = [127, 127, 127];
+    /*lineShaders.colorOrbit = [127, 127, 127];
     for (let indContour = 0; indContour < contourPoints.length; indContour++)
     {
         const points = contourPoints[indContour];
         //console.log(points);
         lineShaders.setGeometry(points);
         lineShaders.draw(matrix);
-    }
+    }*/
 
-    lineShaders.colorOrbit = [255, 255, 255];
+    lineShaders.colorOrbit = [127, 127, 127];
     for (let indContour = 0; indContour < contourPointsGpu.length; indContour++)
     {
         const points = contourPointsGpu[indContour];
