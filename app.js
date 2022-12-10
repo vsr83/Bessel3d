@@ -46,6 +46,22 @@ lineShaders.init();
 pointShaders = new PointShaders(gl);
 pointShaders.init();
 
+var canvasGlHidden = document.getElementById("canvasGLHidden");
+const glHidden = canvasGlHidden.getContext("webgl2", {preserveDrawingBuffer: true});
+const contoursProgram = compileProgramContours(glHidden);
+initContoursGpu(glHidden, contoursProgram);
+let {gpuLimits, gpuGridData} = computeContours(glHidden, contoursProgram);
+const contoursGpu = orbitsjs.createContours(gpuLimits.lonMin, gpuLimits.lonMax, 
+    gpuLimits.latMin, gpuLimits.latMax, 0.25, gpuGridData,  [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
+console.log(contoursGpu);
+
+// 2d and WebGL canvases stacked top of each other.
+//var canvasJs = document.getElementById("canvasJS");
+//var contextJs = canvasJs.getContext("2d");
+
+//var glHidden = canvasGlHidden.getContext("webgl2", {preserveDrawingBuffer: true});
+
+
 let JTstart = orbitsjs.timeJulianTs(new Date()).JT;
 let JTeclipse = orbitsjs.timeJulianTs(new Date("2019-12-26T05:18:53Z")).JT;
 
@@ -85,6 +101,7 @@ const centralLine = computeCentralLine(limits, 1/1440);
 const riseSetPoints = computeRiseSet(limits, 1/1440);
 const contourPoints = contourToPoints(contoursMag);
 const umbraPoints = contourToPoints(contoursUmbra)[0];
+const contourPointsGpu = contourToPoints(contoursGpu);
 
 requestAnimationFrame(drawScene);
 
@@ -271,30 +288,6 @@ function createViewMatrix()
     matrix = m4.zRotate(matrix, rotZ);
 
     return matrix;
-}
-
-/**
- * Draw Earth.
- * 
- * @param {*} matrix 
- *      View matrix.
- * @param {*} rASun 
- *      Right-ascension of the Sun.
- * @param {*} declSun 
- *      Declination of the Sun.
- * @param {*} LST 
- *      Sidereal time.
- * @param {*} JT
- *      Julian time.
- * @param {*} nutPar 
- *      Nutation parameters.
- */
-function drawEarth(matrix, rASun, declSun, LST, JT, nutPar, rECEFMoon, rECEFSun)
-{
-    let rECEF = null;
-
-    let earthMatrix = matrix;
-    earthShaders.draw(earthMatrix, true, false, true, true, rECEFMoon, rECEFSun);
 }
 
 /**

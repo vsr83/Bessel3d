@@ -9,7 +9,8 @@ var dragYStart = 0;
 //var drawing = false;
 
 // Get A WebGL context
-var canvas = document.querySelector("#canvas");
+//var canvas = document.querySelector("#canvas");
+var canvas = document.getElementById("canvas");
 
 canvas.addEventListener("mousedown", function(e) {
     xStart = e.clientX;
