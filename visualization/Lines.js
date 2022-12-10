@@ -90,6 +90,7 @@ function computeRiseSet(limits, timeStep)
  */
 function drawEquator(matrix)
 {
+    lineShaders.colorOrbit = [127, 127, 127];
     const pEquator = [];
     // Distance to the object in the visualization space.
     const D = 0.5 * zFar;
@@ -122,6 +123,7 @@ function drawEquator(matrix)
  */
 function drawEcliptic(matrix, nutPar, JT)
 {
+    lineShaders.colorOrbit = [127, 127, 127];
     const pSun = [];
     // Distance to the object in the visualization space.
     const D = 0.5 * zFar;
@@ -170,10 +172,10 @@ function drawCentralLine(matrix, lat, lon, rECEFMoon, centralLine)
 
     p.push(orbitsjs.vecMul(rECEFMoon, D/orbitsjs.norm(rECEFMoon)));
     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon, 0), 0.001));
-    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat-1, lon, 0), 0.001));
-    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat+1, lon, 0), 0.001));
-    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon-1, 0), 0.001));
-    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon+1, 0), 0.001));
+    //p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat-1, lon, 0), 0.001));
+    //p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat+1, lon, 0), 0.001));
+    //p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon-1, 0), 0.001));
+    //p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon+1, 0), 0.001));
 
     lineShaders.colorOrbit = [255, 255, 255];
     lineShaders.setGeometry(p);

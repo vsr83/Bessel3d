@@ -149,7 +149,7 @@ function drawScene(time)
     const T = (JT - 2451545.0)/36525.0;
     const nutPar = orbitsjs.nutationTerms(T);
 
-    if (JT > eclipse.JTmax + 4/24)
+    if (JT > limits.JTmax)
     {
         JTstart = orbitsjs.timeJulianTs(today).JT;
     }
@@ -169,6 +169,8 @@ function drawScene(time)
     const osvPef = orbitsjs.coordTodPef(osvToD);
     const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
     const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+    const osvSunEfi = orbitsjs.computeOsvSunEfi(JT, nutPar);
+    const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JT, nutPar);
 
     // Clear the canvas
     gl.clearColor(0, 0, 0, 255);
@@ -182,10 +184,6 @@ function drawScene(time)
 
     const matrix = createViewMatrix();
 
-    const osvSunEfi = orbitsjs.computeOsvSunEfi(JT, nutPar);
-    const osvSunTod = orbitsjs.coordPefTod(osvSunEfi, nutPar);
-    const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JT, nutPar);
-
     earthShaders.draw(matrix, true, false, true, true, osvMoonEfi.r, osvSunEfi.r);
 
     drawDistant(osvSunEfi.r, 695700000.0 * 2.0, matrix, true);
@@ -195,6 +193,25 @@ function drawScene(time)
     drawEcliptic(matrix, nutPar, JT);
     drawEquator(matrix);
     drawContours(matrix, contourPointsGpu, derContours);
+
+    let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi);
+    //console.log(umbraLimits);
+    //console.log(umbraGrid);
+    const contoursUmbra = orbitsjs.createContours(umbraLimits.lonMin, umbraLimits.lonMax, 
+        umbraLimits.latMin, umbraLimits.latMax, 0.1, umbraGrid, [1.0], [100.0]);
+    //console.log(contoursUmbra);
+    const contourPointsUmbra = contourToPoints(contoursUmbra);
+
+    lineShaders.colorOrbit = [255, 0, 0];
+    for (let indContour = 0; indContour < contourPointsUmbra.length; indContour++)
+    {
+        const points = contourPointsUmbra[indContour];
+        //console.log(points);
+        lineShaders.setGeometry(points);
+        lineShaders.draw(matrix);
+    }
+    lineShaders.colorOrbit = [127, 127, 127];
+
 
     // Call drawScene again next frame
     requestAnimationFrame(drawScene);

@@ -656,6 +656,12 @@ function createDerContours(limits, spatialRes, temporalRes)
     return derContours;
 }
 
+function createUmbraContour(centralLine)
+{
+
+}
+
+
 /**
  * Draw contours.
  * 
@@ -700,3 +706,52 @@ function drawContours(matrix, contourPointsGpu, derContours)
     }
 }
 
+function createUmbraContour(latCenter, lonCenter, osvSunEfi, osvMoonEfi)
+{
+    let umbraGrid = [];
+
+    let limits = {
+        latMin : latCenter - 2.0, 
+        latMax : latCenter + 2.0,
+        lonMin : lonCenter - 4.0,
+        lonMax : lonCenter + 4.0
+    };
+    
+    for (let lat = latCenter - 2.0; lat <= latCenter + 2.01; lat += 0.1)
+    {
+        let umbraRow = [];
+        for (let lon = lonCenter - 4.0; lon <= lonCenter + 4.01; lon += 0.1)
+        {
+            const rEnuSun = orbitsjs.coordEfiEnu(osvSunEfi, lat, lon, 0.0).r;
+            const rEnuMoon = orbitsjs.coordEfiEnu(osvMoonEfi, lat, lon, 0.0).r;
+            // Radius of the Moon.
+            const rMoon = 1737400;
+            // Radius of the Sun.
+            const rSun  = 696340000;
+            // Angular diameter of the Sun.
+            const angularDiamSun  = 2.0 * orbitsjs.atand(rSun / orbitsjs.norm(rEnuSun)); 
+            // Angular diameter of the Moon.
+            const angularDiamMoon = 2.0 * orbitsjs.atand(rMoon / orbitsjs.norm(rEnuMoon));
+            // Altitude of the Sun.
+            const sunAltitude = orbitsjs.asind(rEnuSun[2] / orbitsjs.norm(rEnuSun));
+            // Angular distance between the Moon and the Sun.
+            const angularDistance = orbitsjs.acosd(orbitsjs.dot(rEnuSun, rEnuMoon) / (orbitsjs.norm(rEnuSun) * orbitsjs.norm(rEnuMoon)));
+
+            let inUmbra = 0;
+            if (sunAltitude > - 0.5 * angularDiamSun)
+            {
+                if (angularDistance < 0.5 * Math.abs(angularDiamSun - angularDiamMoon))
+                {
+                    inUmbra = 1;
+                }                            
+            }
+            umbraRow.push(inUmbra);
+        }
+        umbraGrid.push(umbraRow);
+    }
+
+    return {
+        umbraGrid : umbraGrid, 
+        umbraLimits : limits
+    };
+}
