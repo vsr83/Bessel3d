@@ -1,6 +1,13 @@
 # Bessel3d
-Real-time visualization of solar eclipses. The code is still heavily under development and currently only visualizes a single solar eclipse. The GPU-preprocessed version seems to suffer from issues with Intel GPUs. The ephemeris for the Moon is also somewhat inaccurate, which can introduce about 30 km error.
+Bessel3d implements real-time WebGL visualization of Solar Eclipses. The penumbra is computed each frame in a fragment shader. Contour curves are computed for the umbra, maximum magnitude and the location of point-wise maximum magnitudes at 30-minute intervals.
 
+The computation of the contour curves for the maximum magnitude is a very time-consuming process so an attempt to speed up the process with a dedicated fragment shader has been implemented: The first estimate for the moment of maximum magnitude is computed in a dedicated shader. This significantly reduces the computation time. However, the implementation of this pre-processing currently suffers from issues with Intel GPUs.
+
+The code is still heavily under development and currently visualizes only a single fixed solar eclipse. The ephemeris for the Moon is also somewhat inaccurate, which can introduce about 30 km error.
+
+Large portion of the computation is performed with [orbits.js](https://github.com/vsr83/orbits.js).
+
+Click below to execute the version with GPU-preprocessing.
 [![Screenshot.](scrshot.png)](https://vsr83.github.io/Bessel3d/)
 If the visualization has issues, try the non-optimized version at:
 [https://vsr83.github.io/Bessel3d/index_nogpu.html](https://vsr83.github.io/Bessel3d/index_nogpu.html).
