@@ -563,8 +563,8 @@ function computeLimits(eclipse, spatialRes, temporalRes)
         latMax : gridParams.latMax,
         lonMin : gridParams.lonMin,
         lonMax : gridParams.lonMax,
-        JTmin : gridParams.JTmin,
-        JTmax : gridParams.JTmax,
+        JTmin : gridParams.JTmin - 5/1440,
+        JTmax : gridParams.JTmax + 5/1440,
         spatialRes : spatialRes,
         temporalRes : temporalRes
     };
@@ -657,6 +657,32 @@ function createDerContours(limits, spatialRes, temporalRes)
     
     return derContours;
 }
+
+/**
+ * Create contours for magnitude.
+ * 
+ * @param {*} limits 
+ *      Limits for the brute force computation.
+ * @param {*} spatialRes 
+ *      The spatial resolution in degrees.
+ * @param {*} temporalRes 
+ *      The temperal resolution in Julian days.
+ * @returns Contours.
+ */
+ function createContours(limits, spatialRes, temporalRes)
+ {
+     const gridData = orbitsjs.eclipseMagGrid(limits.JTmin - 10/1440, limits.JTmax + 10/1440,
+                                              temporalRes, 
+                                              limits.lonMin-5, limits.lonMax+5, 
+                                              limits.latMin-5, limits.latMax+5, spatialRes);
+ 
+     const contoursMag = orbitsjs.createContours(limits.lonMin-5, limits.lonMax+5, 
+                     limits.latMin-5, limits.latMax+5, 
+                     spatialRes, gridData.magArray, 
+                     [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
+     
+     return contoursMag;
+ }
 
 function createUmbraContour(centralLine)
 {

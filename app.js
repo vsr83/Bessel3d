@@ -1,5 +1,7 @@
 "use strict";
 
+console.log(useGpu);
+
 var gl = null;
 var earthShaders = null;
 var lineShaders = null;
@@ -76,18 +78,32 @@ nameText.innerText = title;
 
 var startTime = performance.now()
 const gridSize = 0.25;
-const limits = {JTmin : eclipse.JTmax - 5/24, JTmax : eclipse.JTmax + 5/24};
-let {gpuLimits, gpuGridData} = computeContours(glHidden, contoursProgram, limits);
-const contoursGpu = orbitsjs.createContours(gpuLimits.lonMin, gpuLimits.lonMax, 
-    gpuLimits.latMin, gpuLimits.latMax, gridSize, gpuGridData, [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
-var endTime = performance.now()
-console.log(`Contour creation took ${endTime - startTime} milliseconds`)
+
+let limits = null;
+let contours = null;
+
+limits = {JTmin : eclipse.JTmax - 5/24, JTmax : eclipse.JTmax + 5/24};
+
+if (useGpu)
+{
+    let {gpuLimits, gpuGridData} = computeContours(glHidden, contoursProgram, limits);
+    contours = orbitsjs.createContours(gpuLimits.lonMin, gpuLimits.lonMax, 
+        gpuLimits.latMin, gpuLimits.latMax, gridSize, gpuGridData, [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
+    limits.lonMin = gpuLimits.lonMin;
+    limits.lonMax = gpuLimits.lonMax;
+    limits.latMin = gpuLimits.latMin;
+    limits.latMax = gpuLimits.latMax;
+}
+else
+{
+    limits = computeLimits(eclipse, 2.0, 5.0/1440.0);
+    contours = createContours(limits, 0.5, 2.0/1440);
+}
+var endTime = performance.now();
+console.log(`Contour creation took ${endTime - startTime} milliseconds`);
+
 
 //const limits = gpuLimits;
-limits.lonMin = gpuLimits.lonMin;
-limits.lonMax = gpuLimits.lonMax;
-limits.latMin = gpuLimits.latMin;
-limits.latMax = gpuLimits.latMax;
 limits.temporalRes = 1/1440;
 
 startTime = performance.now()
@@ -99,7 +115,7 @@ console.log(`Contour creation took ${endTime - startTime} milliseconds`)
 startTime = performance.now()
 const centralLine = computeCentralLine(limits, 1/1440);
 const riseSetPoints = computeRiseSet(limits, 1/3000);
-const contourPointsGpu = contourToPoints(contoursGpu);
+const contourPointsGpu = contourToPoints(contours);
 endTime = performance.now()
 console.log(`line creation took ${endTime - startTime} milliseconds`)
 
@@ -132,43 +148,7 @@ function drawScene(time)
     // Compute Julian time.
     let dateNow = new Date();
     let today = null;
-
-    /*if (guiControls.timeWarp)
-    {
-        dateDelta += timeControls.warpSeconds.getValue() * 1000;
-        //console.log(dateDelta);
-    }*/
-
-    // If date and time updates are disabled, set date manually from the GUI controls:
-    /*if (!guiControls.enableClock)
-    {
-        dateNow = new Date(guiControls.dateYear, parseInt(guiControls.dateMonth)-1, guiControls.dateDay, 
-            guiControls.timeHour, guiControls.timeMinute, guiControls.timeSecond);
-
-        // Value of dateNow is set from controls above.
-        today = new Date(dateNow.getTime()
-        + 24 * 3600 * 1000 * guiControls.deltaDays
-        + 3600 * 1000 * guiControls.deltaHours
-        + 60 * 1000 * guiControls.deltaMins
-        + 1000 * guiControls.deltaSecs);
-    }
-    else
-    */{
-        today = new Date(dateNow.getTime()
-        /*+ 24 * 3600 * 1000 * guiControls.deltaDays
-        + 3600 * 1000 * guiControls.deltaHours
-        + 60 * 1000 * guiControls.deltaMins
-        + 1000 * guiControls.deltaSecs
-        + dateDelta*/
-        );
-
-        /*timeControls.yearControl.setValue(today.getFullYear());
-        timeControls.monthControl.setValue(today.getMonth() + 1);
-        timeControls.dayControl.setValue(today.getDate());
-        timeControls.hourControl.setValue(today.getHours());
-        timeControls.minuteControl.setValue(today.getMinutes());
-        timeControls.secondControl.setValue(today.getSeconds());*/
-    }
+    today = new Date(dateNow.getTime());
     //const JT = orbitsjs.timeJulianTs(today).JT + (JTeclipse - JTstart);
     const JT = 240.0*(orbitsjs.timeJulianTs(today).JT - JTstart) + eclipse.JTmax - 4/24;
     const T = (JT - 2451545.0)/36525.0;
@@ -228,51 +208,17 @@ function drawScene(time)
     drawEquator(matrix);
     drawContours(matrix, contourPointsGpu, contourPointsDer);
 
-    /*for (let indValues = 0; indValues < Object.keys(contoursGpu).length; indValues++)
-    {
-        let value = Object.keys(contoursGpu)[indValues];
-        const lines = contoursGpu[value];
-
-        if (lines.length > 0)
-        {
-            if (value == 0.001) value = "0.0";
-            let point = lines[0][0];
-            drawText(matrix, point[0] + 0.5, point[1], value.toString());
-        }
-    }*/
     drawCaptions(matrix, magCaptions);
-    /*
-    for (let indValues = 0; indValues < Object.keys(derContours).length; indValues++)
-    {
-        let value = Object.keys(derContours)[indValues];
-        const lines = derContours[value];
-
-        if (lines.length > 0)
-        {
-            if (value == 0.001) value = "0.0";
-            let point = lines[0];
-            let {lat, lon, h} = orbitsjs.coordEfiWgs84(point); 
-
-            //console.log(lat + " " + lon);
-            drawText(matrix, lat, lon, "12345");
-        }
-    }*/
-
-
 
     let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi);
-    //console.log(umbraLimits);
-    //console.log(umbraGrid);
     const contoursUmbra = orbitsjs.createContours(umbraLimits.lonMin, umbraLimits.lonMax, 
         umbraLimits.latMin, umbraLimits.latMax, 0.1, umbraGrid, [1.0], [100.0]);
-    //console.log(contoursUmbra);
     const contourPointsUmbra = contourToPoints(contoursUmbra);
 
     lineShaders.colorOrbit = [255, 0, 0];
     for (let indContour = 0; indContour < contourPointsUmbra.length; indContour++)
     {
         const points = contourPointsUmbra[indContour];
-        //console.log(points);
         lineShaders.setGeometry(points);
         lineShaders.draw(matrix);
     }
@@ -354,61 +300,3 @@ function createViewMatrix()
     return matrix;
 }
 
-/**
- * Draw distant object with the planet shader as a sphere.
- * 
- * @param {*} rEFI 
- *      Coordinates of the object in the EFI frame.
- * @param {*} rObject 
- *      Radius of the object sphere (in meters).
- * @param {*} matrix 
- *      View matrix.
- * @param {*} drawSub 
- *      Draw point of the Earth below the target.
- */
-function drawDistant(rEFI, rObject, matrix, drawSub)
-{
-    // Due to how depth buffer works, it is not feasible to draw objects 
-    // like the Sun millions of kilometers away. Rather, they are drawn 
-    // to the maximum distance while retaining the angular diameter.
-
-    // The following assumes that the observer is close to the center
-    // of the Earth.
-
-    // Angular diameter of the object as seen from the center of the Earth.
-    const angDiam = 2 * orbitsjs.atand(rObject / orbitsjs.norm(rEFI));
-
-    // Distance to the object in the visualization space.
-    const D = 0.5 * zFar;
-
-    // angDiam = 2 * atand(diameter / (2 * D));
-    // <=> diameter / (2 * D) = tand(andDiam/2)
-    // <=> diameter = 2 * D * tand(angDiam/2)
-
-    const rSphere = D * orbitsjs.tand(angDiam / 2);
-    const scale = rSphere / a;
-
-    const targetPos = orbitsjs.vecMul(rEFI, D / orbitsjs.norm(rEFI));
-
-    let targetMatrix = m4.translate(matrix, targetPos[0], targetPos[1], targetPos[2]);
-    targetMatrix = m4.scale(targetMatrix, scale, scale, scale);
-
-    earthShaders.draw(targetMatrix, false, false, false, false);
-
-    if (drawSub)
-    {
-        const pLine = [targetPos];
-        // Distance to the object in the visualization space.
-        const D = 0.5 * zFar;
-        let {lat, lon, h} = orbitsjs.coordEfiWgs84(targetPos); 
-        pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon, 0), 0.001));
-        pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat+1, lon, 0), 0.001));
-        pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat-1, lon, 0), 0.001));
-        pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon+1, 0), 0.001));
-        pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon-1, 0), 0.001));
-    
-        //console.log(pLine);
-        lineShaders.setGeometry(pLine);
-        lineShaders.draw(matrix);
-    }
-}
