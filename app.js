@@ -61,10 +61,16 @@ let toFixed = function(num) {
     else 
         return num;
 }
-const timeGreg = orbitsjs.timeGregorian(eclipse.JTmax);
-const title = timeGreg.year + "-" + toFixed(timeGreg.month) + "-" + toFixed(timeGreg.mday) + 
-                "T" + toFixed(timeGreg.hour) + ":" + toFixed(timeGreg.minute)
-                + ":" + toFixed(Math.floor(timeGreg.second)) + " (" + eclipse.type + ")";
+
+function createTimestamp(JT)
+{
+    const timeGreg = orbitsjs.timeGregorian(JT);
+    return timeGreg.year + "-" + toFixed(timeGreg.month) + "-" + toFixed(timeGreg.mday) + 
+            "T" + toFixed(timeGreg.hour) + ":" + toFixed(timeGreg.minute)
+            + ":" + toFixed(Math.floor(timeGreg.second));
+}
+
+const title = createTimestamp(eclipse.JTmax) + " (" + eclipse.type + ")";
 const nameText = document.getElementById("nameText");
 nameText.innerText = title;
 
@@ -171,11 +177,13 @@ function drawScene(time)
     }
 
     const timeGreg = orbitsjs.timeGregorian(JT);
-    const dateStr = timeGreg.year + "-" + toFixed(timeGreg.month) + "-" + toFixed(timeGreg.mday) + 
-                "T" + toFixed(timeGreg.hour) + ":" + toFixed(timeGreg.minute)
-                + ":" + toFixed(Math.floor(timeGreg.second));
+    const dateStr = createTimestamp(JT) + " TT<br>" 
+                  + "First contact (Penumbra): " + createTimestamp(contactPoints.JTfirstPenumbra)+ "<br>" 
+                  + "First contact (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(contactPoints.JTfirstUmbra)+ "<br>" 
+                  + "Last contact&nbsp; (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(contactPoints.JTlastUmbra) + "<br>"
+                  + "Last contact&nbsp; (Penumbra): " + createTimestamp(contactPoints.JTlastPenumbra);
     const dateText = document.getElementById("dateText");
-    dateText.innerText = dateStr;
+    dateText.innerHTML = dateStr;
 
     const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
     const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
