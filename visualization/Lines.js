@@ -39,10 +39,11 @@ function computeCentralLine(limits, timeStep)
 }
 
 /**
- * Compute first and last contacts of the penumbra.
+ * Compute first and last contacts of the umbra and the penumbra.
  * 
  * @param {*} limits 
- * @returns 
+ *     Time limits.
+ * @returns Object with first and last contacts of the umbra and the penumbra.
  */
 function computeFirstLastContact(limits)
 {
@@ -52,6 +53,14 @@ function computeFirstLastContact(limits)
     let latFirst = NaN;
     let lonLast = NaN;
     let latLast = NaN;
+
+    let JTfirstUmbra = NaN;
+    let JTlastUmbra = NaN;
+    let lonFirstUmbra = NaN;
+    let latFirstUmbra = NaN;
+    let lonLastUmbra = NaN;
+    let latLastUmbra = NaN;
+
 
     for (let JT = limits.JTmin; JT < limits.JTmax; JT += 2/1440)
     {
@@ -65,32 +74,35 @@ function computeFirstLastContact(limits)
             break;
         }
     }
-    for (let JT = JTfirst - 2/1440; JT <= JTfirst; JT += 1/86400)
+    if (!isNaN(JTfirst))
     {
-        const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
-        const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
-        const points = orbitsjs.besselianRiseSet(bessel);
-    
-        if (points.length > 0)
+        for (let JT = JTfirst - 2/1440; JT <= JTfirst; JT += 1/86400)
         {
-            JTfirst = JT;
+            const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+            const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+            const points = orbitsjs.besselianRiseSet(bessel);
+        
+            if (points.length > 0)
+            {
+                JTfirst = JT;
 
-            const osvFund = {
-                r : [points[0][0], points[0][1], 0],
-                v : [0, 0, 0],
-                JT : JT
-            };
-            const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
-            const de = 6378137;
-        
-            osvToD.r = orbitsjs.vecMul(osvToD.r, de);
-            const osvPef = orbitsjs.coordTodPef(osvToD);
-            const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
-            const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
-            lonFirst = wgs84.lon;
-            latFirst = wgs84.lat;
-        
-            break;
+                const osvFund = {
+                    r : [points[0][0], points[0][1], 0],
+                    v : [0, 0, 0],
+                    JT : JT
+                };
+                const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
+                const de = 6378137;
+            
+                osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+                const osvPef = orbitsjs.coordTodPef(osvToD);
+                const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
+                const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+                lonFirst = wgs84.lon;
+                latFirst = wgs84.lat;
+            
+                break;
+            }
         }
     }
 
@@ -106,42 +118,143 @@ function computeFirstLastContact(limits)
             break;
         }
     }
-    for (let JT = JTlast + 2/1440; JT >= JTlast; JT -= 1/86400)
+    if (!isNaN(JTlast))
+    {
+        for (let JT = JTlast + 2/1440; JT >= JTlast; JT -= 1/86400)
+        {
+            const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+            const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+            const points = orbitsjs.besselianRiseSet(bessel);
+        
+            if (points.length > 0)
+            {
+                JTlast= JT;
+
+                const osvFund = {
+                    r : [points[0][0], points[0][1], 0],
+                    v : [0, 0, 0],
+                    JT : JT
+                };
+                const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
+                const de = 6378137;
+            
+                osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+                const osvPef = orbitsjs.coordTodPef(osvToD);
+                const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
+                const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+                lonLast = wgs84.lon;
+                latLast = wgs84.lat;
+            
+                break;
+            }
+        }
+    }
+
+
+
+
+    for (let JT = limits.JTmin; JT < limits.JTmax; JT += 2/1440)
     {
         const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
         const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
         const points = orbitsjs.besselianRiseSet(bessel);
     
-        if (points.length > 0)
+        if (!isNaN(centralLineJT.zeta))
         {
-            JTlast= JT;
-
-            const osvFund = {
-                r : [points[0][0], points[0][1], 0],
-                v : [0, 0, 0],
-                JT : JT
-            };
-            const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
-            const de = 6378137;
-        
-            osvToD.r = orbitsjs.vecMul(osvToD.r, de);
-            const osvPef = orbitsjs.coordTodPef(osvToD);
-            const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
-            const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
-            lonLast = wgs84.lon;
-            latLast = wgs84.lat;
-        
+            JTfirstUmbra = JT;
             break;
         }
     }
+    if (!isNaN(JTfirstUmbra))
+    {
+        for (let JT = JTfirstUmbra - 2/1440; JT <= JTfirstUmbra; JT += 1/86400)
+        {
+            const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+            const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+            const points = orbitsjs.besselianRiseSet(bessel);
+
+            if (!isNaN(centralLineJT.zeta))
+            {
+                JTfirstUmbra = JT;
+
+                const osvFund = {
+                    r : [bessel.x, bessel.y, centralLineJT.zeta],
+                    v : [0, 0, 0],
+                    JT : JT
+                };
+                const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
+                const de = 6378137;
+        
+                osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+                const osvPef = orbitsjs.coordTodPef(osvToD);
+                const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
+                const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+        
+                lonFirstUmbra = wgs84.lon;
+                latFirstUmbra = wgs84.lat;
+                break;
+            }
+        }
+    }
+
+    for (let JT = limits.JTmax; JT > limits.JTmin; JT -= 2/1440)
+    {
+        const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+        const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+        const points = orbitsjs.besselianRiseSet(bessel);
+    
+        if (!isNaN(centralLineJT.zeta))
+        {
+            JTlastUmbra = JT;
+            break;
+        }
+    }
+    if (!isNaN(JTlastUmbra))
+    {
+        for (let JT = JTlastUmbra + 2/1440; JT >= JTlastUmbra; JT -= 1/86400)
+        {
+            const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+            const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+            const points = orbitsjs.besselianRiseSet(bessel);
+        
+            if (!isNaN(centralLineJT.zeta))
+            {
+                JTlastUmbra = JT;
+
+                const osvFund = {
+                    r : [bessel.x, bessel.y, centralLineJT.zeta],
+                    v : [0, 0, 0],
+                    JT : JT
+                };
+                const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
+                const de = 6378137;
+        
+                osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+                const osvPef = orbitsjs.coordTodPef(osvToD);
+                const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
+                const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+        
+                lonLastUmbra = wgs84.lon;
+                latLastUmbra = wgs84.lat;
+                break;
+            }
+        }
+    }
+
 
     return {
-        latFirst : latFirst,
-        lonFirst : lonFirst,
-        latLast : latLast,
-        lonLast : lonLast,
-        JTfirst : JTfirst,
-        JTlast : JTlast
+        latFirstPenumbra : latFirst,
+        lonFirstPenumbra : lonFirst,
+        latLastPenumbra : latLast,
+        lonLastPenumbra : lonLast,
+        JTfirstPenumbra : JTfirst,
+        JTlastPenumbra : JTlast,
+        latFirstUmbra : latFirstUmbra,
+        lonFirstUmbra : lonFirstUmbra,
+        latLastUmbra : latLastUmbra,
+        lonLastUmbra : lonLastUmbra,
+        JTfirstUmbra : JTfirstUmbra,
+        JTlastUmbra : JTlastUmbra
     };
 }
 
@@ -316,23 +429,31 @@ function drawRiseSet(matrix, riseSetPoints)
  * @param {*} contactPoints 
  *     The contact point object.
  */
- function drawContactPoints(matrix, contactPoints)
- {
-     const p = [];
-     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirst-1, contactPoints.lonFirst, 10000), 0.001));
-     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirst+1, contactPoints.lonFirst, 10000), 0.001));
-     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirst, contactPoints.lonFirst-1, 10000), 0.001));
-     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirst, contactPoints.lonFirst+1, 10000), 0.001));
+function drawContactPoints(matrix, contactPoints)
+{
+    const p = [];
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstPenumbra-1, contactPoints.lonFirstPenumbra, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstPenumbra+1, contactPoints.lonFirstPenumbra, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstPenumbra, contactPoints.lonFirstPenumbra-1, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstPenumbra, contactPoints.lonFirstPenumbra+1, 10000), 0.001));
 
-     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLast-1, contactPoints.lonLast, 10000), 0.001));
-     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLast+1, contactPoints.lonLast, 10000), 0.001));
-     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLast, contactPoints.lonLast-1, 10000), 0.001));
-     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLast, contactPoints.lonLast+1, 10000), 0.001));
- 
-     console.log(contactPoints);
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastPenumbra-1, contactPoints.lonLastPenumbra, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastPenumbra+1, contactPoints.lonLastPenumbra, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastPenumbra, contactPoints.lonLastPenumbra-1, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastPenumbra, contactPoints.lonLastPenumbra+1, 10000), 0.001));
 
-     lineShaders.colorOrbit = [255, 255, 255];
-     lineShaders.setGeometry(p);
-     lineShaders.draw(matrix);
- }
- 
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstUmbra-1, contactPoints.lonFirstUmbra, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstUmbra+1, contactPoints.lonFirstUmbra, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstUmbra, contactPoints.lonFirstUmbra-1, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstUmbra, contactPoints.lonFirstUmbra+1, 10000), 0.001));
+
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastUmbra-1, contactPoints.lonLastUmbra, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastUmbra+1, contactPoints.lonLastUmbra, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastUmbra, contactPoints.lonLastUmbra-1, 10000), 0.001));
+    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastUmbra, contactPoints.lonLastUmbra+1, 10000), 0.001));
+
+    lineShaders.colorOrbit = [255, 255, 255];
+    lineShaders.setGeometry(p);
+    lineShaders.draw(matrix);
+}
+
