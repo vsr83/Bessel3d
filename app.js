@@ -55,6 +55,19 @@ const listEclipses = orbitsjs.solarEclipses(2019.75, 2019);
 console.log(listEclipses);
 const eclipse = listEclipses[0];
 
+let toFixed = function(num) {
+    if (num < 10)
+        return "0" + num;
+    else 
+        return num;
+}
+const timeGreg = orbitsjs.timeGregorian(eclipse.JTmax);
+const title = timeGreg.year + "-" + toFixed(timeGreg.month) + "-" + toFixed(timeGreg.mday) + 
+                "T" + toFixed(timeGreg.hour) + ":" + toFixed(timeGreg.minute)
+                + ":" + toFixed(Math.floor(timeGreg.second)) + " (" + eclipse.type + ")";
+const nameText = document.getElementById("nameText");
+nameText.innerText = title;
+
 var startTime = performance.now()
 const gridSize = 0.25;
 const limits = {JTmin : eclipse.JTmax - 5/24, JTmax : eclipse.JTmax + 5/24};
@@ -78,10 +91,13 @@ console.log(`Contour creation took ${endTime - startTime} milliseconds`)
 
 startTime = performance.now()
 const centralLine = computeCentralLine(limits, 1/1440);
-const riseSetPoints = computeRiseSet(limits, 1/1440);
+const riseSetPoints = computeRiseSet(limits, 1/3000);
 const contourPointsGpu = contourToPoints(contoursGpu);
 endTime = performance.now()
 console.log(`line creation took ${endTime - startTime} milliseconds`)
+
+const contactPoints = computeFirstLastContact(limits);
+
 
 requestAnimationFrame(drawScene);
 
@@ -154,6 +170,13 @@ function drawScene(time)
         JTstart = orbitsjs.timeJulianTs(today).JT;
     }
 
+    const timeGreg = orbitsjs.timeGregorian(JT);
+    const dateStr = timeGreg.year + "-" + toFixed(timeGreg.month) + "-" + toFixed(timeGreg.mday) + 
+                "T" + toFixed(timeGreg.hour) + ":" + toFixed(timeGreg.minute)
+                + ":" + toFixed(Math.floor(timeGreg.second));
+    const dateText = document.getElementById("dateText");
+    dateText.innerText = dateStr;
+
     const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
     const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
 
@@ -210,8 +233,8 @@ function drawScene(time)
         lineShaders.setGeometry(points);
         lineShaders.draw(matrix);
     }
-    lineShaders.colorOrbit = [127, 127, 127];
-
+    lineShaders.colorOrbit = [255, 0, 0];
+    drawContactPoints(matrix, contactPoints);
 
     // Call drawScene again next frame
     requestAnimationFrame(drawScene);

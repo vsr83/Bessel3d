@@ -39,6 +39,113 @@ function computeCentralLine(limits, timeStep)
 }
 
 /**
+ * Compute first and last contacts of the penumbra.
+ * 
+ * @param {*} limits 
+ * @returns 
+ */
+function computeFirstLastContact(limits)
+{
+    let JTfirst = NaN;
+    let JTlast = NaN;
+    let lonFirst = NaN;
+    let latFirst = NaN;
+    let lonLast = NaN;
+    let latLast = NaN;
+
+    for (let JT = limits.JTmin; JT < limits.JTmax; JT += 2/1440)
+    {
+        const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+        const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+        const points = orbitsjs.besselianRiseSet(bessel);
+    
+        if (points.length > 0)
+        {
+            JTfirst = JT;
+            break;
+        }
+    }
+    for (let JT = JTfirst - 2/1440; JT <= JTfirst; JT += 1/86400)
+    {
+        const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+        const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+        const points = orbitsjs.besselianRiseSet(bessel);
+    
+        if (points.length > 0)
+        {
+            JTfirst = JT;
+
+            const osvFund = {
+                r : [points[0][0], points[0][1], 0],
+                v : [0, 0, 0],
+                JT : JT
+            };
+            const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
+            const de = 6378137;
+        
+            osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+            const osvPef = orbitsjs.coordTodPef(osvToD);
+            const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
+            const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+            lonFirst = wgs84.lon;
+            latFirst = wgs84.lat;
+        
+            break;
+        }
+    }
+
+    for (let JT = limits.JTmax; JT > limits.JTmin; JT -= 2/1440)
+    {
+        const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+        const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+        const points = orbitsjs.besselianRiseSet(bessel);
+    
+        if (points.length > 0)
+        {
+            JTlast = JT;
+            break;
+        }
+    }
+    for (let JT = JTlast + 2/1440; JT >= JTlast; JT -= 1/86400)
+    {
+        const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+        const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+        const points = orbitsjs.besselianRiseSet(bessel);
+    
+        if (points.length > 0)
+        {
+            JTlast= JT;
+
+            const osvFund = {
+                r : [points[0][0], points[0][1], 0],
+                v : [0, 0, 0],
+                JT : JT
+            };
+            const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
+            const de = 6378137;
+        
+            osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+            const osvPef = orbitsjs.coordTodPef(osvToD);
+            const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
+            const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+            lonLast = wgs84.lon;
+            latLast = wgs84.lat;
+        
+            break;
+        }
+    }
+
+    return {
+        latFirst : latFirst,
+        lonFirst : lonFirst,
+        latLast : latLast,
+        lonLast : lonLast,
+        JTfirst : JTfirst,
+        JTlast : JTlast
+    };
+}
+
+/**
  * Compute rise and set curves.
  * 
  * @param {*} limits 
@@ -196,7 +303,36 @@ function drawCentralLine(matrix, lat, lon, rECEFMoon, centralLine)
  */
 function drawRiseSet(matrix, riseSetPoints)
 {
-    lineShaders.colorOrbit = [255, 127, 127];
+    lineShaders.colorOrbit = [0, 255, 0];
     lineShaders.setGeometry(riseSetPoints);
     lineShaders.draw(matrix);
 }
+
+/**
+ * Draw central line.
+ * 
+ * @param {*} matrix 
+ *     View matrix.
+ * @param {*} contactPoints 
+ *     The contact point object.
+ */
+ function drawContactPoints(matrix, contactPoints)
+ {
+     const p = [];
+     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirst-1, contactPoints.lonFirst, 10000), 0.001));
+     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirst+1, contactPoints.lonFirst, 10000), 0.001));
+     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirst, contactPoints.lonFirst-1, 10000), 0.001));
+     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirst, contactPoints.lonFirst+1, 10000), 0.001));
+
+     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLast-1, contactPoints.lonLast, 10000), 0.001));
+     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLast+1, contactPoints.lonLast, 10000), 0.001));
+     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLast, contactPoints.lonLast-1, 10000), 0.001));
+     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLast, contactPoints.lonLast+1, 10000), 0.001));
+ 
+     console.log(contactPoints);
+
+     lineShaders.colorOrbit = [255, 255, 255];
+     lineShaders.setGeometry(p);
+     lineShaders.draw(matrix);
+ }
+ 
