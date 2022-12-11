@@ -455,5 +455,115 @@ function drawContactPoints(matrix, contactPoints)
     lineShaders.colorOrbit = [255, 255, 255];
     lineShaders.setGeometry(p);
     lineShaders.draw(matrix);
-}
 
+    drawText(matrix, contactPoints.latFirstPenumbra, contactPoints.lonFirstPenumbra+2, 'P1', [255, 255, 255]);
+    drawText(matrix, contactPoints.latFirstUmbra, contactPoints.lonFirstUmbra+2, 'P2', [255, 255, 255]);
+    drawText(matrix, contactPoints.latLastUmbra, contactPoints.lonLastUmbra+2, 'P3', [255, 255, 255]);
+    drawText(matrix, contactPoints.latLastPenumbra, contactPoints.lonLastPenumbra+2, 'P4', [255, 255, 255]);
+}
+const charLineMap = {
+    '1' : [[0.5, 0.0, 0.5, 1.0]],
+    '2' : [[1.0, 0.0, 0.0, 0.0], 
+           [0.0, 0.0, 0.0, 0.5],
+           [0.0, 0.5, 1.0, 0.5],
+           [1.0, 0.5, 1.0, 1.0],
+           [1.0, 1.0, 0.0, 1.0]],
+    '3' : [[0.0, 1.0, 1.0, 1.0],
+           [1.0, 1.0, 1.0, 0.0],
+           [0.0, 0.5, 1.0, 0.5],
+           [0.0, 0.0, 1.0, 0.0]],
+    '4' : [[0.0, 1.0, 0.0, 0.5],
+           [0.0, 0.5, 1.0, 0.5],
+           [1.0, 1.0, 1.0, 0.0]],
+    '5' : [[1.0, 1.0, 0.0, 1.0],
+           [0.0, 1.0, 0.0, 0.5],
+           [0.0, 0.5, 1.0, 0.5],
+           [1.0, 0.5, 1.0, 0.0],
+           [0.0, 0.0, 1.0, 0.0]],
+    '6' : [[0.0, 0.0, 0.0, 1.0],
+           [0.0, 0.0, 1.0, 0.0],
+           [1.0, 0.0, 1.0, 0.5],
+           [0.0, 0.5, 1.0, 0.5]],
+    '7' : [[0.0, 1.0, 1.0, 1.0],
+           [1.0, 1.0, 0.5, 0.5],
+           [0.5, 0.0, 0.5, 0.5]],
+    '8' : [[0.0, 0.0, 1.0, 0.0],
+           [0.0, 0.5, 1.0, 0.5],
+           [0.0, 1.0, 1.0, 1.0],
+           [0.0, 0.0, 0.0, 1.0],
+           [1.0, 0.0, 1.0, 1.0]],
+    '9' : [[0.0, 1.0, 1.0, 1.0],
+           [0.0, 0.5, 1.0, 0.5],
+           [0.0, 0.5, 0.0, 1.0],
+           [1.0, 0.0, 1.0, 1.0]],
+    '0' : [[0.0, 0.0, 0.0, 1.0],
+           [0.0, 0.0, 1.0, 0.0],
+           [0.0, 1.0, 1.0, 1.0],
+           [1.0, 0.0, 1.0, 1.0]],
+    'P' : [[0.0, 0.0, 0.0, 1.0],
+           [0.0, 1.0, 1.0, 1.0],
+           [0.0, 0.5, 1.0, 0.5],
+           [1.0, 0.5, 1.0, 1.0]],
+    ':' : [[0.4, 0.2, 0.6, 0.2],
+           [0.6, 0.2, 0.6, 0.4],
+           [0.4, 0.4, 0.6, 0.4],
+           [0.4, 0.2, 0.4, 0.4],
+           [0.4, 0.6, 0.6, 0.6],
+           [0.6, 0.6, 0.6, 0.8],
+           [0.4, 0.8, 0.6, 0.8],
+           [0.4, 0.6, 0.4, 0.8]],
+    '.' : [[0.4, 0.0, 0.6, 0.0],
+           [0.6, 0.0, 0.6, 0.2],
+           [0.4, 0.2, 0.6, 0.2],
+           [0.4, 0.0, 0.4, 0.2]]
+};
+function drawText(matrix, lat, lon, s, color, upDir)
+{
+    if (upDir === undefined)
+    {
+        upDir = [0, 1, 0];
+    }
+    upDir = orbitsjs.vecMul(upDir, 1.0 / orbitsjs.norm(upDir));
+    const angleUp = orbitsjs.atan2d(upDir[1], upDir[0]);
+    const rightDir = [orbitsjs.cosd(angleUp - 90), orbitsjs.sind(angleUp - 90), 0];
+
+
+    const p = [];
+    for (let indChar = 0; indChar < s.length; indChar++)
+    {
+        const latStart = lat + rightDir[1] * indChar * 1.0;
+        const lonStart = lon + rightDir[0] * indChar * 0.8;
+
+        if (!charLineMap.hasOwnProperty(s[indChar]))
+        {
+            continue;
+        }
+
+        lines = charLineMap[s[indChar]];
+
+        for (let indLine = 0; indLine < lines.length; indLine++)
+        {
+            const line = lines[indLine];
+            //let pointStart = orbitsjs.coordWgs84Efi(latStart + line[1], lonStart + line[0]*0.6, 10000);
+            //let pointEnd = orbitsjs.coordWgs84Efi(latStart + line[3], lonStart + line[2]*0.6, 10000);
+            let pointStart = orbitsjs.coordWgs84Efi(
+                latStart + 1.0*(line[1] * upDir[1] + line[0] * rightDir[1]), 
+                lonStart + 0.6*(line[1] * upDir[0] + line[0] * rightDir[0]), 
+                10000);
+            let pointEnd = orbitsjs.coordWgs84Efi(
+                latStart + 1.0*(line[3] * upDir[1] + line[2] * rightDir[1]), 
+                lonStart + 0.6*(line[3] * upDir[0] + line[2] * rightDir[0]), 
+                10000);
+            p.push(orbitsjs.vecMul(pointStart, 0.001));
+            p.push(orbitsjs.vecMul(pointEnd, 0.001));
+        }
+    }
+
+    if (color === undefined)
+    {
+        color = [127, 127, 127];
+    }
+    lineShaders.colorOrbit = color;
+    lineShaders.setGeometry(p);
+    lineShaders.draw(matrix);
+}

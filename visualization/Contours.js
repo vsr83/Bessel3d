@@ -577,7 +577,7 @@ function computeLimits(eclipse, spatialRes, temporalRes)
  *      Array of contours.
  * @returns 
  */
-function contourToPoints(contours)
+function contourToPoints(contours, JTmax)
 {
     let contourPoints = [];
 
@@ -586,10 +586,14 @@ function contourToPoints(contours)
         const value = Object.keys(contours)[indValues];
         const lines = contours[value];
     
-        const points = [];
+       const points = [];
         for (let indLine = 0; indLine < lines.length; indLine++)
         {
             const line = lines[indLine];
+            if (line.length == 0) 
+            {
+                continue;
+            }
             const pStart = orbitsjs.coordWgs84Efi(line[0][0], line[0][1], 10000.0);
             const pEnd = orbitsjs.coordWgs84Efi(line[1][0], line[1][1], 10000.0);        
             points.push(orbitsjs.vecMul(pStart, 0.001));
@@ -614,9 +618,6 @@ function contourToPoints(contours)
  */
 function createDerContours(limits, spatialRes, temporalRes)
 {
-    const contoursMag = [];
-    const contoursUmbra = [];
-
     const timeGregMin = orbitsjs.timeGregorian(limits.JTmin);
     const timeGregMax = orbitsjs.timeGregorian(limits.JTmax);
     const derJTmin = orbitsjs.timeJulianYmdhms(timeGregMin.year, timeGregMin.month, timeGregMin.mday, 
@@ -638,7 +639,8 @@ function createDerContours(limits, spatialRes, temporalRes)
         const contours = orbitsjs.createContours(limits.lonMin-5, limits.lonMax+5, 
             limits.latMin-5, limits.latMax+5, spatialRes, gridDataDer, [0.0], [100.0]);
     
-        const lines = contours[0];
+        derContours[derJT] = contours[0];
+        /*const lines = contours[0];
     
         const points = [];
         for (let indLine = 0; indLine < lines.length; indLine++)
@@ -650,7 +652,7 @@ function createDerContours(limits, spatialRes, temporalRes)
             points.push(orbitsjs.vecMul(pStart, 0.001));
             points.push(orbitsjs.vecMul(pEnd, 0.001));
         } 
-        derContours.push(points);
+        derContours.push(points);*/
     }
     
     return derContours;
@@ -658,7 +660,7 @@ function createDerContours(limits, spatialRes, temporalRes)
 
 function createUmbraContour(centralLine)
 {
-
+    // TODO
 }
 
 

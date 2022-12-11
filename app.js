@@ -92,6 +92,7 @@ limits.temporalRes = 1/1440;
 
 startTime = performance.now()
 let derContours = createDerContours(limits, 1.0, 1/1440);
+const contourPointsDer = contourToPoints(derContours);
 endTime = performance.now()
 console.log(`Contour creation took ${endTime - startTime} milliseconds`)
 
@@ -101,6 +102,8 @@ const riseSetPoints = computeRiseSet(limits, 1/3000);
 const contourPointsGpu = contourToPoints(contoursGpu);
 endTime = performance.now()
 console.log(`line creation took ${endTime - startTime} milliseconds`)
+
+const magCaptions = createMagCaptions(derContours);
 
 const contactPoints = computeFirstLastContact(limits);
 
@@ -178,10 +181,10 @@ function drawScene(time)
 
     const timeGreg = orbitsjs.timeGregorian(JT);
     const dateStr = createTimestamp(JT) + " TT<br>" 
-                  + "First contact (Penumbra): " + createTimestamp(contactPoints.JTfirstPenumbra)+ "<br>" 
-                  + "First contact (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(contactPoints.JTfirstUmbra)+ "<br>" 
-                  + "Last contact&nbsp; (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(contactPoints.JTlastUmbra) + "<br>"
-                  + "Last contact&nbsp; (Penumbra): " + createTimestamp(contactPoints.JTlastPenumbra);
+                  + "P1 : First contact (Penumbra): " + createTimestamp(contactPoints.JTfirstPenumbra)+ "<br>" 
+                  + "P2 : First contact (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(contactPoints.JTfirstUmbra)+ "<br>" 
+                  + "P3 : Last contact&nbsp; (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(contactPoints.JTlastUmbra) + "<br>"
+                  + "P4 : Last contact&nbsp; (Penumbra): " + createTimestamp(contactPoints.JTlastPenumbra);
     const dateText = document.getElementById("dateText");
     dateText.innerHTML = dateStr;
 
@@ -223,7 +226,39 @@ function drawScene(time)
     drawRiseSet(matrix, riseSetPoints);
     drawEcliptic(matrix, nutPar, JT);
     drawEquator(matrix);
-    drawContours(matrix, contourPointsGpu, derContours);
+    drawContours(matrix, contourPointsGpu, contourPointsDer);
+
+    /*for (let indValues = 0; indValues < Object.keys(contoursGpu).length; indValues++)
+    {
+        let value = Object.keys(contoursGpu)[indValues];
+        const lines = contoursGpu[value];
+
+        if (lines.length > 0)
+        {
+            if (value == 0.001) value = "0.0";
+            let point = lines[0][0];
+            drawText(matrix, point[0] + 0.5, point[1], value.toString());
+        }
+    }*/
+    drawCaptions(matrix, magCaptions);
+    /*
+    for (let indValues = 0; indValues < Object.keys(derContours).length; indValues++)
+    {
+        let value = Object.keys(derContours)[indValues];
+        const lines = derContours[value];
+
+        if (lines.length > 0)
+        {
+            if (value == 0.001) value = "0.0";
+            let point = lines[0];
+            let {lat, lon, h} = orbitsjs.coordEfiWgs84(point); 
+
+            //console.log(lat + " " + lon);
+            drawText(matrix, lat, lon, "12345");
+        }
+    }*/
+
+
 
     let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi);
     //console.log(umbraLimits);
