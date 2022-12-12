@@ -7,7 +7,7 @@
  *      Time step.
  * @returns Array of points in EFI frame (km).
  */
-function computeCentralLine(limits, timeStep)
+function computeCentralLine(eclipse, limits, timeStep)
 {
     const centralLine = [];
 
@@ -45,7 +45,7 @@ function computeCentralLine(limits, timeStep)
  *     Time limits.
  * @returns Object with first and last contacts of the umbra and the penumbra.
  */
-function computeFirstLastContact(limits)
+function computeFirstLastContact(eclipse, limits)
 {
     let JTfirst = NaN;
     let JTlast = NaN;
@@ -267,7 +267,7 @@ function computeFirstLastContact(limits)
  *      The timestep.
  * @returns Array of points in EFI frame (km).
  */
-function computeRiseSet(limits, timeStep)
+function computeRiseSet(eclipse, limits, timeStep)
 {
     const riseSetPoints = [];
 
@@ -527,12 +527,13 @@ function drawText(matrix, lat, lon, s, color, upDir)
     const angleUp = orbitsjs.atan2d(upDir[1], upDir[0]);
     const rightDir = [orbitsjs.cosd(angleUp - 90), orbitsjs.sind(angleUp - 90), 0];
 
+    const scale = 1.0 / Math.abs(orbitsjs.cosd(lat));
 
     const p = [];
     for (let indChar = 0; indChar < s.length; indChar++)
     {
-        const latStart = lat + rightDir[1] * indChar * 1.0;
-        const lonStart = lon + rightDir[0] * indChar * 0.8;
+        const latStart = lat + rightDir[1] * indChar * 1.0 * scale;
+        const lonStart = lon + rightDir[0] * indChar * 0.8 * scale;
 
         if (!charLineMap.hasOwnProperty(s[indChar]))
         {
@@ -547,12 +548,12 @@ function drawText(matrix, lat, lon, s, color, upDir)
             //let pointStart = orbitsjs.coordWgs84Efi(latStart + line[1], lonStart + line[0]*0.6, 10000);
             //let pointEnd = orbitsjs.coordWgs84Efi(latStart + line[3], lonStart + line[2]*0.6, 10000);
             let pointStart = orbitsjs.coordWgs84Efi(
-                latStart + 1.0*(line[1] * upDir[1] + line[0] * rightDir[1]), 
-                lonStart + 0.6*(line[1] * upDir[0] + line[0] * rightDir[0]), 
+                latStart + 1.0*(line[1] * upDir[1] + line[0] * rightDir[1]) * scale, 
+                lonStart + 0.6*(line[1] * upDir[0] + line[0] * rightDir[0]) * scale, 
                 10000);
             let pointEnd = orbitsjs.coordWgs84Efi(
-                latStart + 1.0*(line[3] * upDir[1] + line[2] * rightDir[1]), 
-                lonStart + 0.6*(line[3] * upDir[0] + line[2] * rightDir[0]), 
+                latStart + 1.0*(line[3] * upDir[1] + line[2] * rightDir[1]) * scale, 
+                lonStart + 0.6*(line[3] * upDir[0] + line[2] * rightDir[0]) * scale, 
                 10000);
             p.push(orbitsjs.vecMul(pointStart, 0.001));
             p.push(orbitsjs.vecMul(pointEnd, 0.001));

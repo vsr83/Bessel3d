@@ -69,11 +69,21 @@ highp float atand(in highp float value)
 
 highp float acosd(in highp float value)
 {
+    if (value > 1.0)
+    {
+        return 0.0;
+    }
+
     return rad2deg(acos(value));
 }
 
 highp float asind(in highp float value)
 {
+    if (value > 1.0)
+    {
+        return 90.0;
+    }
+
     return rad2deg(asin(value));
 }
 

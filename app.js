@@ -52,11 +52,6 @@ initContoursGpu(glHidden, contoursProgram);
 
 let JTstart = orbitsjs.timeJulianTs(new Date()).JT;
 
-
-const listEclipses = orbitsjs.solarEclipses(2019.75, 2019);
-console.log(listEclipses);
-const eclipse = listEclipses[0];
-
 let toFixed = function(num) {
     if (num < 10)
         return "0" + num;
@@ -72,6 +67,74 @@ function createTimestamp(JT)
             + ":" + toFixed(Math.floor(timeGreg.second));
 }
 
+
+//const listEclipses = orbitsjs.solarEclipses(2019.75, 2019);
+const listEclipses = orbitsjs.solarEclipses(1950.00, 2050);
+console.log(listEclipses);
+
+let indEclipse = 0;
+function loadEclipse(eclipseIn)
+{
+    const state = {};
+    state.eclipse = eclipseIn;
+
+    // Update title:
+    state.title = createTimestamp(state.eclipse.JTmax) + " (" + state.eclipse.type + ")";
+    const nameText = document.getElementById("nameText");
+    nameText.innerText = state.title;
+
+    var startTime = performance.now()
+    state.gridSize = 0.25;
+    
+    state.contours = null;
+    state.limits = {JTmin : state.eclipse.JTmax - 5/24, JTmax : state.eclipse.JTmax + 5/24};
+    
+    if (useGpu)
+    {
+        let {gpuLimits, gpuGridData} = computeContours(glHidden, contoursProgram, state.limits);
+        state.contours = orbitsjs.createContours(gpuLimits.lonMin, gpuLimits.lonMax, 
+            gpuLimits.latMin, gpuLimits.latMax, state.gridSize, gpuGridData, [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
+        state.limits.lonMin = gpuLimits.lonMin;
+        state.limits.lonMax = gpuLimits.lonMax;
+        state.limits.latMin = gpuLimits.latMin;
+        state.limits.latMax = gpuLimits.latMax;
+    }
+    else
+    {
+        state.limits = computeLimits(state.eclipse, 2.0, 5.0/1440.0);
+        state.contours = createContours(state.limits, 0.5, 2.0/1440);
+    }
+    var endTime = performance.now();
+    console.log(`Contour creation took ${endTime - startTime} milliseconds`);
+        
+    //const limits = gpuLimits;
+    state.limits.temporalRes = 1/1440;
+    
+    startTime = performance.now()
+    state.derContours = createDerContours(state.limits, 1.0, 1/1440);
+    state.contourPointsDer = contourToPoints(state.derContours);
+    endTime = performance.now()
+    console.log(`Contour creation took ${endTime - startTime} milliseconds`)
+    
+    startTime = performance.now()
+    state.centralLine = computeCentralLine(state.eclipse, state.limits, 1/1440);
+    state.riseSetPoints = computeRiseSet(state.eclipse, state.limits, 1/3000);
+    state.contourPointsGpu = contourToPoints(state.contours);
+    endTime = performance.now()
+    console.log(`line creation took ${endTime - startTime} milliseconds`)
+    
+    state.magCaptions = createMagCaptions(state.derContours);
+    state.contactPoints = computeFirstLastContact(state.eclipse, state.limits);    
+
+    state.limits.JTmin = state.contactPoints.JTfirstPenumbra - 60/1440;
+    state.limits.JTax = state.contactPoints.JTlastPenumbra + 60/1440;
+
+    return state;
+}
+
+let state = loadEclipse(listEclipses[0])
+
+/*
 const title = createTimestamp(eclipse.JTmax) + " (" + eclipse.type + ")";
 const nameText = document.getElementById("nameText");
 nameText.innerText = title;
@@ -122,7 +185,7 @@ console.log(`line creation took ${endTime - startTime} milliseconds`)
 const magCaptions = createMagCaptions(derContours);
 
 const contactPoints = computeFirstLastContact(limits);
-
+*/
 
 requestAnimationFrame(drawScene);
 
@@ -150,26 +213,37 @@ function drawScene(time)
     let today = null;
     today = new Date(dateNow.getTime());
     //const JT = orbitsjs.timeJulianTs(today).JT + (JTeclipse - JTstart);
-    const JT = 240.0*(orbitsjs.timeJulianTs(today).JT - JTstart) + eclipse.JTmax - 4/24;
-    const T = (JT - 2451545.0)/36525.0;
-    const nutPar = orbitsjs.nutationTerms(T);
+    let JT = 2400.0*(orbitsjs.timeJulianTs(today).JT - JTstart) + state.eclipse.JTmax - 4/24;
+    let T = (JT - 2451545.0)/36525.0;
+    let nutPar = orbitsjs.nutationTerms(T);
 
-    if (JT > limits.JTmax)
+    if (JT > state.limits.JTmax)
     {
+        indEclipse++;
+        state = loadEclipse(listEclipses[indEclipse]);
+        console.log(state);
+
+        // Compute Julian time.
+        dateNow = new Date();
+        today = new Date(dateNow.getTime());
+        //const JT = orbitsjs.timeJulianTs(today).JT + (JTeclipse - JTstart);
+        JT = 2400.0*(orbitsjs.timeJulianTs(today).JT - JTstart) + state.eclipse.JTmax - 4/24;
+        T = (JT - 2451545.0)/36525.0;
+        nutPar = orbitsjs.nutationTerms(T);
         JTstart = orbitsjs.timeJulianTs(today).JT;
     }
 
     const timeGreg = orbitsjs.timeGregorian(JT);
     const dateStr = createTimestamp(JT) + " TT<br>" 
-                  + "P1 : First contact (Penumbra): " + createTimestamp(contactPoints.JTfirstPenumbra)+ "<br>" 
-                  + "P2 : First contact (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(contactPoints.JTfirstUmbra)+ "<br>" 
-                  + "P3 : Last contact&nbsp; (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(contactPoints.JTlastUmbra) + "<br>"
-                  + "P4 : Last contact&nbsp; (Penumbra): " + createTimestamp(contactPoints.JTlastPenumbra);
+                  + "P1 : First contact (Penumbra): " + createTimestamp(state.contactPoints.JTfirstPenumbra)+ "<br>" 
+                  + "P2 : First contact (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(state.contactPoints.JTfirstUmbra)+ "<br>" 
+                  + "P3 : Last contact&nbsp; (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(state.contactPoints.JTlastUmbra) + "<br>"
+                  + "P4 : Last contact&nbsp; (Penumbra): " + createTimestamp(state.contactPoints.JTlastPenumbra);
     const dateText = document.getElementById("dateText");
     dateText.innerHTML = dateStr;
 
-    const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
-    const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+    const bessel = orbitsjs.besselianSolarWithDelta(state.eclipse, JT, 1/1440);
+    const centralLineJT = orbitsjs.besselianCentralLine(state.eclipse, bessel, JT);
 
     const osvFund = {
         r : [bessel.x, bessel.y, centralLineJT.zeta],
@@ -183,6 +257,48 @@ function drawScene(time)
     const osvPef = orbitsjs.coordTodPef(osvToD);
     const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
     const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+
+    if (isNaN(state.contactPoints.JTfirstUmbra))
+    {
+        if (JT < state.contactPoints.JTfirstPenumbra)
+        {
+            rotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstPenumbra);
+            rotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstPenumbra);
+        }
+        else if (JT > state.contactPoints.JTlastPenumbra)
+        {
+            rotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonLastPenumbra);
+            rotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latLastPenumbra);
+        }
+        else 
+        {
+            if (state.contactPoints.lonLastPenumbra < state.contactPoints.lonFirstPenumbra)
+                state.contactPoints.lonLastPenumbra += 360.0;
+
+            rotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstPenumbra -
+                (state.contactPoints.lonLastPenumbra - state.contactPoints.lonFirstPenumbra)
+               *(JT - state.contactPoints.JTfirstPenumbra) / (state.contactPoints.JTlastPenumbra - state.contactPoints.JTfirstPenumbra));
+            rotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstPenumbra +
+                (state.contactPoints.latLastPenumbra - state.contactPoints.latFirstPenumbra)
+               *(JT - state.contactPoints.JTfirstPenumbra) / (state.contactPoints.JTlastPenumbra - state.contactPoints.JTfirstPenumbra));
+        }
+    }
+    else if (JT < state.contactPoints.JTfirstUmbra)
+    {
+        rotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstUmbra);
+        rotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstUmbra);
+    }
+    else if (JT > state.contactPoints.JTlastUmbra)
+    {
+        rotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonLastUmbra);
+        rotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latLastUmbra);
+    }
+    else 
+    {
+        rotZ = orbitsjs.deg2Rad(-90 - wgs84.lon);
+        rotX = orbitsjs.deg2Rad(-90 + wgs84.lat);    
+    }
+
     const osvSunEfi = orbitsjs.computeOsvSunEfi(JT, nutPar);
     const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JT, nutPar);
 
@@ -202,13 +318,13 @@ function drawScene(time)
 
     drawDistant(osvSunEfi.r, 695700000.0 * 2.0, matrix, true);
     drawDistant(osvMoonEfi.r, 1737400.0 * 2.0, matrix, true);
-    drawCentralLine(matrix, wgs84.lat, wgs84.lon, osvMoonEfi.r, centralLine);
-    drawRiseSet(matrix, riseSetPoints);
+    drawCentralLine(matrix, wgs84.lat, wgs84.lon, osvMoonEfi.r, state.centralLine);
+    drawRiseSet(matrix, state.riseSetPoints);
     drawEcliptic(matrix, nutPar, JT);
     drawEquator(matrix);
-    drawContours(matrix, contourPointsGpu, contourPointsDer);
+    drawContours(matrix, state.contourPointsGpu, state.contourPointsDer);
 
-    drawCaptions(matrix, magCaptions);
+    drawCaptions(matrix, state.magCaptions);
 
     let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi);
     const contoursUmbra = orbitsjs.createContours(umbraLimits.lonMin, umbraLimits.lonMax, 
@@ -223,7 +339,7 @@ function drawScene(time)
         lineShaders.draw(matrix);
     }
     lineShaders.colorOrbit = [255, 0, 0];
-    drawContactPoints(matrix, contactPoints);
+    drawContactPoints(matrix, state.contactPoints);
 
     // Call drawScene again next frame
     requestAnimationFrame(drawScene);
