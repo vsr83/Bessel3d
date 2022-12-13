@@ -725,22 +725,28 @@ function drawContours(matrix, contourPointsGpu, derContours)
         lineShaders.draw(matrix);
     }*/
 
-    lineShaders.colorOrbit = [127, 127, 127];
-    for (let indContour = 0; indContour < contourPointsGpu.length; indContour++)
+    if (guiControls.enableMagContours)
     {
-        const points = contourPointsGpu[indContour];
-        //console.log(points);
-        lineShaders.setGeometry(points);
-        lineShaders.draw(matrix);
+        lineShaders.colorOrbit = guiControls.colorMagContour;
+        for (let indContour = 0; indContour < contourPointsGpu.length; indContour++)
+        {
+            const points = contourPointsGpu[indContour];
+            //console.log(points);
+            lineShaders.setGeometry(points);
+            lineShaders.draw(matrix);
+        }
     }
 
-    lineShaders.colorOrbit = [127, 127, 127];
-    for (let indContour = 0; indContour < derContours.length; indContour++)
+    if (guiControls.enableDerContours)
     {
-        const points = derContours[indContour];
-        //console.log(points);
-        lineShaders.setGeometry(points);
-        lineShaders.draw(matrix);
+        lineShaders.colorOrbit = guiControls.colorDerContour;
+        for (let indContour = 0; indContour < derContours.length; indContour++)
+        {
+            const points = derContours[indContour];
+            //console.log(points);
+            lineShaders.setGeometry(points);
+            lineShaders.draw(matrix);
+        }
     }
 }
 

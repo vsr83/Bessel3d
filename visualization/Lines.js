@@ -310,7 +310,12 @@ function computeRiseSet(eclipse, limits, timeStep)
  */
 function drawEquator(matrix)
 {
-    lineShaders.colorOrbit = [127, 127, 127];
+    if (!guiControls.enableEquator)
+    {
+        return;
+    }
+
+    lineShaders.colorOrbit = guiControls.colorOrbit;
     const pEquator = [];
     // Distance to the object in the visualization space.
     const D = 0.5 * zFar;
@@ -343,7 +348,12 @@ function drawEquator(matrix)
  */
 function drawEcliptic(matrix, nutPar, JT)
 {
-    lineShaders.colorOrbit = [127, 127, 127];
+    if (!guiControls.enableEcliptic)
+    {
+        return;
+    }
+
+    lineShaders.colorOrbit = guiControls.colorOrbit;
     const pSun = [];
     // Distance to the object in the visualization space.
     const D = 0.5 * zFar;
@@ -387,23 +397,24 @@ function drawEcliptic(matrix, nutPar, JT)
  */
 function drawCentralLine(matrix, lat, lon, rECEFMoon, centralLine)
 {
-    const D = 0.5 * zFar;
-    const p = [];
+    if (guiControls.enableAxisLine)
+    {
+        const D = 0.5 * zFar;
+        const p = [];
+    
+        p.push(orbitsjs.vecMul(rECEFMoon, D/orbitsjs.norm(rECEFMoon)));
+        p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon, 0), 0.001));
+        lineShaders.colorOrbit = guiControls.colorCentral;
+        lineShaders.setGeometry(p);
+        lineShaders.draw(matrix);
+    }
 
-    p.push(orbitsjs.vecMul(rECEFMoon, D/orbitsjs.norm(rECEFMoon)));
-    p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon, 0), 0.001));
-    //p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat-1, lon, 0), 0.001));
-    //p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat+1, lon, 0), 0.001));
-    //p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon-1, 0), 0.001));
-    //p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon+1, 0), 0.001));
-
-    lineShaders.colorOrbit = [255, 255, 255];
-    lineShaders.setGeometry(p);
-    lineShaders.draw(matrix);
-
-    lineShaders.colorOrbit = [255, 255, 255];
-    lineShaders.setGeometry(centralLine);
-    lineShaders.draw(matrix);
+    if (guiControls.enableCentral)
+    {
+        lineShaders.colorOrbit = guiControls.colorCentral;
+        lineShaders.setGeometry(centralLine);
+        lineShaders.draw(matrix);
+    }
 }
 
 /**
@@ -416,9 +427,12 @@ function drawCentralLine(matrix, lat, lon, rECEFMoon, centralLine)
  */
 function drawRiseSet(matrix, riseSetPoints)
 {
-    lineShaders.colorOrbit = [0, 255, 0];
-    lineShaders.setGeometry(riseSetPoints);
-    lineShaders.draw(matrix);
+    if (guiControls.enableRiseSet)
+    {
+        lineShaders.colorOrbit = guiControls.colorRiseSet;
+        lineShaders.setGeometry(riseSetPoints);
+        lineShaders.draw(matrix);
+    }
 }
 
 /**
@@ -431,6 +445,10 @@ function drawRiseSet(matrix, riseSetPoints)
  */
 function drawContactPoints(matrix, contactPoints)
 {
+    if (!guiControls.enableContact)
+    {
+        return;
+    }
     const p = [];
     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstPenumbra-1, contactPoints.lonFirstPenumbra, 10000), 0.001));
     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latFirstPenumbra+1, contactPoints.lonFirstPenumbra, 10000), 0.001));
@@ -452,7 +470,7 @@ function drawContactPoints(matrix, contactPoints)
     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastUmbra, contactPoints.lonLastUmbra-1, 10000), 0.001));
     p.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(contactPoints.latLastUmbra, contactPoints.lonLastUmbra+1, 10000), 0.001));
 
-    lineShaders.colorOrbit = [255, 255, 255];
+    lineShaders.colorOrbit = guiControls.colorContact;
     lineShaders.setGeometry(p);
     lineShaders.draw(matrix);
 
@@ -519,6 +537,11 @@ const charLineMap = {
 };
 function drawText(matrix, lat, lon, s, color, upDir)
 {
+    if (!guiControls.enableCaptions)
+    {
+        return;
+    }
+
     if (upDir === undefined)
     {
         upDir = [0, 1, 0];
@@ -562,7 +585,7 @@ function drawText(matrix, lat, lon, s, color, upDir)
 
     if (color === undefined)
     {
-        color = [127, 127, 127];
+        color = guiControls.colorText;
     }
     lineShaders.colorOrbit = color;
     lineShaders.setGeometry(p);

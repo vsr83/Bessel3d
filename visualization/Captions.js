@@ -1,10 +1,11 @@
 function createMagCaptions(derContours)
 {
-    const captionList = [];
+    const magCaptionList = [];
+    const maxCaptionList = [];
 
     let indLongest = 0;
     let numLongest = 0;
-    const levels = [0.01, 0.2, 0.4, 0.6, 0.8];
+    const levels = [0.2, 0.4, 0.6, 0.8];
 
     for (let indValues = 0; indValues < Object.keys(derContours).length; indValues++)
     {
@@ -26,8 +27,8 @@ function createMagCaptions(derContours)
             ];
 
             const timeGreg = orbitsjs.timeGregorian(Number(value));
-            console.log(timeGreg);
-            captionList.push({
+            //console.log(timeGreg);
+            maxCaptionList.push({
                 lat : lines[0][0][0]-3,
                 lon : lines[0][0][1]-2,
                 text : timeGreg.hour + ":" + toFixed(timeGreg.minute),
@@ -38,12 +39,12 @@ function createMagCaptions(derContours)
     const lines = derContours[Object.keys(derContours)[indLongest]];
     const JT = Object.keys(derContours)[indLongest];
 
-    captionList.push({
+    magCaptionList.push({
         lat : lines[0][0][0]+0.5,
         lon : lines[0][0][1]+1,
         text : "0.0"
     });
-    captionList.push({
+    magCaptionList.push({
         lat : lines[lines.length - 1][1][0]+0.5,
         lon : lines[lines.length - 1][1][1]+1,
         text : "0.0"
@@ -79,7 +80,7 @@ function createMagCaptions(derContours)
     
                 console.log(pointStart + " " + level);
 
-                captionList.push({
+                magCaptionList.push({
                     lat : pointStart[0]+0.5,
                     lon : pointStart[1]+1,
                     text : level.toString(),
@@ -87,7 +88,7 @@ function createMagCaptions(derContours)
             }
         }
     }
-    return captionList;
+    return {maxCaptions : maxCaptionList, magCaptions : magCaptionList};
 }
 
 function drawCaptions(matrix, captions)

@@ -9,8 +9,10 @@
  *      View matrix.
  * @param {*} drawSub 
  *      Draw point of the Earth below the target.
+ * @param {*} drawSubline
+ *      Draw line between the Earth and the target.
  */
- function drawDistant(rEFI, rObject, matrix, drawSub)
+ function drawDistant(rEFI, rObject, matrix, drawSub, drawSubline)
  {
      // Due to how depth buffer works, it is not feasible to draw objects 
      // like the Sun millions of kilometers away. Rather, they are drawn 
@@ -38,14 +40,26 @@
      targetMatrix = m4.scale(targetMatrix, scale, scale, scale);
  
      earthShaders.draw(targetMatrix, false, false, false, false);
- 
-     if (drawSub)
+
+     if (drawSubline)
      {
          const pLine = [targetPos];
          // Distance to the object in the visualization space.
          const D = 0.5 * zFar;
          let {lat, lon, h} = orbitsjs.coordEfiWgs84(targetPos); 
          pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon, 0), 0.001));
+
+         //console.log(pLine);
+         lineShaders.setGeometry(pLine);
+         lineShaders.draw(matrix);
+     }
+ 
+     if (drawSub)
+     {
+         const pLine = [];
+         // Distance to the object in the visualization space.
+         const D = 0.5 * zFar;
+         let {lat, lon, h} = orbitsjs.coordEfiWgs84(targetPos); 
          pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat+1, lon, 0), 0.001));
          pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat-1, lon, 0), 0.001));
          pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon+1, 0), 0.001));
