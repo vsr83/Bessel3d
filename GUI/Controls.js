@@ -55,6 +55,7 @@ guiControls = new function()
     this.lockLatRot = false;
     this.lon = 0.0; 
     this.lat = 0.0;
+    this.distance = 6378.1370*1.01;
     this.upLon = 0.0;
     this.upLat = 90.0;
     this.fov = 30;
@@ -141,3 +142,9 @@ appearanceFolder.addColor(guiControls, 'colorMagContour').name('Mag. Contours');
 appearanceFolder.addColor(guiControls, 'colorDerContour').name('Max. Contours');
 
 const cameraFolder = gui.addFolder('Camera');
+cameraFolder.add(guiControls, 'fov', 1, 180, 1).name('Field of View');
+cameraFolder.add(guiControls, 'lockLonRot').name('Lock Longitude');
+cameraFolder.add(guiControls, 'lockLatRot').name('Lock Latitude');
+cameraControls.lon = cameraFolder.add(guiControls, 'lon', -180, 180, 0.1).name('Longitude');
+cameraControls.lat = cameraFolder.add(guiControls, 'lat', -180, 180, 0.1).name('Latitude');
+cameraControls.distance = cameraFolder.add(guiControls, 'distance', 6378.1370*1.01, 1000000, 100).name('Distance');

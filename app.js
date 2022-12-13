@@ -337,7 +337,7 @@ function drawScene(time)
 function createViewMatrix()
 {
     // Compute the projection matrix.
-    const fieldOfViewRadians = orbitsjs.deg2Rad(30.0);
+    const fieldOfViewRadians = orbitsjs.deg2Rad(guiControls.fov);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
     const zNear = (distance - b) / 2;
     const projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
@@ -359,36 +359,9 @@ function createViewMatrix()
     const viewMatrix = m4.inverse(cameraMatrix);
     const viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
-    // Handle longitude locking.
-    // TODO: Longitude has inconsistent value in J2000.
-    /*if (guiControls.lockLonRot)
-    {
-        rotZ = MathUtils.deg2Rad(-90 - ISS.lon);
-
-        if (guiControls.frame === 'J2000')
-        {
-            rotZ = MathUtils.deg2Rad(-90 - ISS.lon - MathUtils.rad2Deg(LST));
-        }
-
-        cameraControls.lon.setValue(ISS.lon);
-    }
-    else if (canvas.onmousemove == null)
-    {        
-        rotZ = MathUtils.deg2Rad(-90 - guiControls.lon);
-    }
-    */
-
-    // Handle latitude locking.
-    // TODO: Latitude has inconsistent value in J2000.
-    /*if (guiControls.lockLatRot)
-    {
-        rotX = MathUtils.deg2Rad(-90 + ISS.lat);
-        cameraControls.lat.setValue(ISS.lat);
-    }
-    else if (canvas.onmousemove == null)
-    {
-        rotX = MathUtils.deg2Rad(-90 + guiControls.lat);
-    }*/
+    cameraControls.lon.setValue(-90 - orbitsjs.rad2Deg(rotZ));
+    cameraControls.lat.setValue( 90 + orbitsjs.rad2Deg(rotX));
+    cameraControls.distance.setValue(distance);
 
     // Rotate view projection matrix to take into account rotation to target coordinates.
     var matrix = m4.xRotate(viewProjectionMatrix, rotX);
