@@ -139,3 +139,5 @@ appearanceFolder.addColor(guiControls, 'colorOrbit').name('Orbits');
 appearanceFolder.addColor(guiControls, 'colorRiseSet').name('Rise/Set Lines');
 appearanceFolder.addColor(guiControls, 'colorMagContour').name('Mag. Contours');
 appearanceFolder.addColor(guiControls, 'colorDerContour').name('Max. Contours');
+
+const cameraFolder = gui.addFolder('Camera');

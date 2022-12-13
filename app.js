@@ -131,6 +131,9 @@ function loadEclipse(eclipseIn)
     state.limits.JTmin = state.contactPoints.JTfirstPenumbra - 60/1440;
     state.limits.JTax = state.contactPoints.JTlastPenumbra + 60/1440;
 
+    rotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstPenumbra);
+    rotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstPenumbra);
+
     return state;
 }
 
