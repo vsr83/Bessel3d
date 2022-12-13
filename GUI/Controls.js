@@ -9,7 +9,8 @@ const timeControls = {};
 
 guiControls = new function()
 {
-    this.enableGrid = true;
+    this.enableMap = true;
+    this.enableGrid = false;
     this.enableMagContours = true;
     this.enableDerContours = true;
 
@@ -23,8 +24,8 @@ guiControls = new function()
     this.enableSublunar = true; 
     this.enableCentral = true;
     this.enableAxisLine = true;
-    this.enableSubsolarLine = true;
-    this.enableSublunarLine = true; 
+    this.enableSubsolarLine = false;
+    this.enableSublunarLine = false; 
     this.drawClock = true; 
     this.drawTitle = true;
     this.gridLonResolution = 30;
@@ -58,13 +59,14 @@ guiControls = new function()
     this.distance = 6378.1370*1.01;
     this.upLon = 0.0;
     this.upLat = 90.0;
-    this.fov = 30;
+    this.fov = 10;
 }
 
 
 gui = new dat.GUI();
 
 const visibilityFolder = gui.addFolder('Visibility');
+displayControls.enableMap = visibilityFolder.add(guiControls, 'enableMap').name('Map Lines');
 displayControls.enableEclipse = visibilityFolder.add(guiControls, 'enableEclipse').name('Solar Eclipse');
 displayControls.enableUmbra = visibilityFolder.add(guiControls, 'enableUmbra').name('Solar Umbra');
 displayControls.enableMagContours = visibilityFolder.add(guiControls, 'enableMagContours').name('Mag. Contours');

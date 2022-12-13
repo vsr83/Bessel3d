@@ -12,7 +12,7 @@ var a = 6378.1370;
 var b = 6356.75231414;
 
 // Camera distance from Earth.
-var distance = 5.0 * a;
+var distance = 10.0 * a;
 const zFar = 1000000;
 
 // Field of view.
