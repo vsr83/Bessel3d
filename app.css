@@ -196,7 +196,7 @@ body {
       color: red;
     }
       
-    #autoCompleteContainer
+  #autoCompleteContainer
 {
     z-index : 11;
     opacity: 1.0;
@@ -214,4 +214,24 @@ body {
     opacity: 1.0;
     font-size: 15px;
     font-family : monospace;
+}
+#sliderContainer
+{ 
+  width: 900px;
+}
+#timeRange
+{ 
+  -webkit-appearance: none;
+  appearance: none;
+  z-index : 11;
+  position: absolute; 
+  left: 20px; 
+  bottom: 0px; 
+  outline: none;
+  opacity: 0.5;
+  margin-left: auto; 
+  margin-right: auto; 
+  width: 400px;
+  cursor : pointer;
+  background-color: #303030;
 }

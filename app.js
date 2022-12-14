@@ -137,11 +137,25 @@ function loadEclipse(eclipseIn)
     return state;
 }
 
+let sliderTime = null;
+let sliderStartValue = 0;
+const timeSlider = document.getElementById("timeRange");
+timeSlider.addEventListener('input', (event) => {
+    if (sliderTime == null)
+    {
+        sliderTime = new Date().getTime();
+        sliderStartValue = timeSlider.value;
+    }
+});
+
+
 let state = loadEclipse(listEclipses[0])
 
 requestAnimationFrame(drawScene);
 
 let drawing = false;
+let JTdelta = 0;
+let warpFactor = 500.0;
 
 function drawScene(time) 
 {
@@ -164,13 +178,44 @@ function drawScene(time)
     let dateNow = new Date();
     let today = null;
     today = new Date(dateNow.getTime());
+    const todayJT = orbitsjs.timeJulianTs(today).JT;
     //const JT = orbitsjs.timeJulianTs(today).JT + (JTeclipse - JTstart);
-    let JT = 500.0*(orbitsjs.timeJulianTs(today).JT - JTstart) + state.eclipse.JTmax - 4/24;
+    let JT = warpFactor * (todayJT - JTstart) + state.limits.JTmin;
+
+    if (sliderTime == null)
+    {
+        timeSlider.value = Math.floor(10000 * (JT - state.limits.JTmin)/(state.limits.JTmax - state.limits.JTmin));
+    }
+    else 
+    {
+        if (new Date().getTime() - sliderTime > 1000)
+        {
+            sliderTime = null;
+        }
+        else 
+        {
+            // 10000 * (JT - JTmin) / (JTmax - JTmin) = value 
+            // 10000 * (JT - JTmin) = (JTmax - JTmin) * value
+            // JT = JTmin + (JTmax - JTmin) * value / 10000
+            
+            const JTtarget = state.limits.JTmin + (state.limits.JTmax - state.limits.JTmin) 
+                           * timeSlider.value / 10000;
+
+            // JT = warpFactor*(todayJT - JTstart) + JTmin;
+            // (JT - JTmin) / warpFactor = todayJT - JTstart
+            // JTstart = todayJT - (JT - JTmin) / warpFactor
+
+            JTstart = todayJT - (JTtarget - state.limits.JTmin) / warpFactor;
+            console.log(JTstart+ " " + JTtarget);
+        }
+    }
+
     let T = (JT - 2451545.0)/36525.0;
     let nutPar = orbitsjs.nutationTerms(T);
 
     if (JT > state.limits.JTmax)
     {
+        /*
         //indEclipse++;
         state = loadEclipse(listEclipses[indEclipse]);
         console.log(state);
@@ -183,6 +228,8 @@ function drawScene(time)
         T = (JT - 2451545.0)/36525.0;
         nutPar = orbitsjs.nutationTerms(T);
         JTstart = orbitsjs.timeJulianTs(today).JT;
+        */
+       JTstart = todayJT;
     }
 
     const timeGreg = orbitsjs.timeGregorian(JT);
