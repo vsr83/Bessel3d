@@ -46,7 +46,7 @@ guiControls = new function()
     this.enableContact = true; 
     this.enableCaptions = true; 
 
-    this.warpFactor = 1.0;
+    this.warpFactor = 500.0;
     this.skipToNext = false;
 
     this.GitHub = function() {
@@ -70,8 +70,11 @@ displayControls.enableMap = visibilityFolder.add(guiControls, 'enableMap').name(
 displayControls.enableEclipse = visibilityFolder.add(guiControls, 'enableEclipse').name('Solar Eclipse');
 displayControls.enableUmbra = visibilityFolder.add(guiControls, 'enableUmbra').name('Solar Umbra');
 displayControls.enableMagContours = visibilityFolder.add(guiControls, 'enableMagContours').name('Mag. Contours');
+
 displayControls.enableDerContours = visibilityFolder.add(guiControls, 'enableDerContours').name('Max. Contours');
 displayControls.enableGrid = visibilityFolder.add(guiControls, 'enableGrid').name('Grid Lines');
+displayControls.enableRiseSet = visibilityFolder.add(guiControls, 'enableRiseSet').name('Rise&Set Lines');
+displayControls.enableContact = visibilityFolder.add(guiControls, 'enableContact').name('Contact Points');
 displayControls.enableEcliptic = visibilityFolder.add(guiControls, 'enableEcliptic').name('Ecliptic');
 displayControls.enableEquator = visibilityFolder.add(guiControls, 'enableEquator').name('Equator');
 displayControls.enableConstellations = visibilityFolder.add(guiControls, 'enableConstellations').name('Constellations');
@@ -150,3 +153,8 @@ cameraFolder.add(guiControls, 'lockLatRot').name('Lock Latitude');
 cameraControls.lon = cameraFolder.add(guiControls, 'lon', -180, 180, 0.1).name('Longitude');
 cameraControls.lat = cameraFolder.add(guiControls, 'lat', -180, 180, 0.1).name('Latitude');
 cameraControls.distance = cameraFolder.add(guiControls, 'distance', 6378.1370*1.01, 1000000, 100).name('Distance');
+
+const timeFolder = gui.addFolder('Time');
+timeControls.warpFactor = timeFolder.add(guiControls, 'warpFactor', -1000, 1000, 1);
+
+gui.add(guiControls, 'GitHub');

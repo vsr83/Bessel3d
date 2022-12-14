@@ -67,10 +67,12 @@ function createTimestamp(JT)
             + ":" + toFixed(Math.floor(timeGreg.second));
 }
 
-
-const listEclipses = orbitsjs.solarEclipses(2019.75, 2019);
-//const listEclipses = orbitsjs.solarEclipses(1950.00, 2050);
+var startTime = performance.now()
+//const listEclipses = orbitsjs.solarEclipses(2019.75, 2019);
+const listEclipses = orbitsjs.solarEclipses(1900.00, 2100.00);
 console.log(listEclipses);
+var endTime = performance.now();
+console.log(`Eclipse computation took ${endTime - startTime} milliseconds`)
 
 let indEclipse = 0;
 function loadEclipse(eclipseIn)
@@ -83,7 +85,7 @@ function loadEclipse(eclipseIn)
     const nameText = document.getElementById("nameText");
     nameText.innerText = state.title;
 
-    var startTime = performance.now()
+    startTime = performance.now()
     state.gridSize = 0.25;
     
     state.contours = null;
@@ -104,7 +106,7 @@ function loadEclipse(eclipseIn)
         state.limits = computeLimits(state.eclipse, 2.0, 5.0/1440.0);
         state.contours = createContours(state.limits, 0.5, 2.0/1440);
     }
-    var endTime = performance.now();
+    endTime = performance.now();
     console.log(`Contour creation took ${endTime - startTime} milliseconds`);
         
     //const limits = gpuLimits;
@@ -147,6 +149,7 @@ timeSlider.addEventListener('input', (event) => {
         sliderStartValue = timeSlider.value;
     }
 });
+let warpFactorPrev = guiControls.warpFactor;
 
 
 let state = loadEclipse(listEclipses[0])
@@ -154,8 +157,6 @@ let state = loadEclipse(listEclipses[0])
 requestAnimationFrame(drawScene);
 
 let drawing = false;
-let JTdelta = 0;
-let warpFactor = 500.0;
 
 function drawScene(time) 
 {
@@ -164,6 +165,7 @@ function drawScene(time)
         requestAnimationFrame(drawScene);
         return;
     }
+
     drawing = true;
 
     canvas.width = document.documentElement.clientWidth;
@@ -174,13 +176,25 @@ function drawScene(time)
     // Avoid change to the list during the execution of the method.
     //const enableList = guiControls.enableList;
 
-    // Compute Julian time.
+
     let dateNow = new Date();
     let today = null;
     today = new Date(dateNow.getTime());
     const todayJT = orbitsjs.timeJulianTs(today).JT;
+
+    // Compute Julian time.
+    if (warpFactorPrev != guiControls.warpFactor)
+    {
+        // warp * (todayJT - JTstartnew) = warpPrev * (todayJT - JTstartold) 
+        // todayJT - JTstartnew = (warpPrev / warp) * (todayJT - JTstartold)
+        // JTstartnew = todayJT - (warpPrev / warp) * (todayJT - JTstartold)
+        JTstart = todayJT - (warpFactorPrev / guiControls.warpFactor)
+                * (todayJT - JTstart);
+    }
+    warpFactorPrev = guiControls.warpFactor;
+
     //const JT = orbitsjs.timeJulianTs(today).JT + (JTeclipse - JTstart);
-    let JT = warpFactor * (todayJT - JTstart) + state.limits.JTmin;
+    let JT = guiControls.warpFactor * (todayJT - JTstart) + state.limits.JTmin;
 
     if (sliderTime == null)
     {
@@ -205,7 +219,7 @@ function drawScene(time)
             // (JT - JTmin) / warpFactor = todayJT - JTstart
             // JTstart = todayJT - (JT - JTmin) / warpFactor
 
-            JTstart = todayJT - (JTtarget - state.limits.JTmin) / warpFactor;
+            JTstart = todayJT - (JTtarget - state.limits.JTmin) / guiControls.warpFactor;
             //console.log(JTstart+ " " + JTtarget);
         }
     }
@@ -215,25 +229,15 @@ function drawScene(time)
 
     if (JT > state.limits.JTmax && sliderTime == null)
     {
-        /*
-        //indEclipse++;
-        state = loadEclipse(listEclipses[indEclipse]);
-        console.log(state);
-
-        // Compute Julian time.
-        dateNow = new Date();
-        today = new Date(dateNow.getTime());
-        //const JT = orbitsjs.timeJulianTs(today).JT + (JTeclipse - JTstart);
-        JT = 500.0*(orbitsjs.timeJulianTs(today).JT - JTstart) + state.eclipse.JTmax - 4/24;
-        T = (JT - 2451545.0)/36525.0;
-        nutPar = orbitsjs.nutationTerms(T);
-        JTstart = orbitsjs.timeJulianTs(today).JT;
-        */
+       JTstart = todayJT;
+    }
+    if (JT < state.limits.JTmin && sliderTime == null)
+    {
        JTstart = todayJT;
     }
 
     const timeGreg = orbitsjs.timeGregorian(JT);
-    const dateStr = createTimestamp(JT) + " TT<br>" 
+    const dateStr = createTimestamp(JT) + " TT - " + JT + "<br>" 
                   + "P1 : First contact (Penumbra): " + createTimestamp(state.contactPoints.JTfirstPenumbra)+ "<br>" 
                   + "P2 : First contact (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(state.contactPoints.JTfirstUmbra)+ "<br>" 
                   + "P3 : Last contact&nbsp; (Umbra)&nbsp;&nbsp;&nbsp;: " + createTimestamp(state.contactPoints.JTlastUmbra) + "<br>"
