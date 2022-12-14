@@ -1,7 +1,7 @@
 # Bessel3d
 Bessel3d implements real-time WebGL visualization of Solar Eclipses. The penumbra is computed each frame in a fragment shader. Contour curves are computed for the umbra, maximum magnitude and the location of point-wise maximum magnitudes at 30-minute intervals.
 
-The computation of the contour curves for the maximum magnitude is a very time-consuming process so an attempt to speed up the process with a dedicated fragment shader has been implemented: The first estimate for the moment of maximum magnitude is computed in a dedicated shader. This significantly reduces the computation time. However, the implementation of this pre-processing currently suffers from issues with Intel GPUs.
+Since the computation of the contour curves for the maximum magnitude is a very time-consuming process, an attempt to speed up the process with a dedicated fragment shader has been implemented: The first estimate for the moment of maximum magnitude is computed in a dedicated shader. This significantly reduces the computation time. However, the implementation of this pre-processing currently suffers from issues with Intel GPUs.
 
 By default, the code computes all Solar Eclipses between 1900 and 2100. The eclipse can be selected using a search bar. The results seem to be less accurate for eclipses futher away from the year 2000.
 
