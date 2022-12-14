@@ -11,6 +11,7 @@
         <script src="imports/dat.gui.min.js"></script>
 
         <link rel="stylesheet" href="app.css">
+        <link rel="stylesheet" href="imports/autoComplete.02.min.css">
     </head>
     <body style="background: black; color: white; overflow-y: hidden; overflow-x: hidden">
         <div class="container" id="container">
@@ -22,8 +23,13 @@
             <div id="sliderContainer">
                 <input type="range" min="0" max="10000" value="0" class="slider" id="timeRange">
             </div>
-
         </div>
+        <div id="autoCompleteContainer">
+            <div class="autoComplete_wrapper">
+                <input id="autoComplete" type="search" dir="ltr" spellcheck=false autocorrect="off" autocomplete="on" autocapitalize="off">
+            </div>
+        </div>
+    
         <div class="containerHidden" id="containerHidden">
             <canvas id="canvasGLHidden"></div>
         </div>
@@ -31,6 +37,7 @@
             const useGpu = true;
         </script>
 
+        <script src="imports/autoComplete.min.js"></script>        
         <script src="visualization/Captions.js"></script>
         <script src="visualization/Spheres.js"></script>
         <script src="visualization/Contours.js"></script>

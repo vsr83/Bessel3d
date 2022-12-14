@@ -3,7 +3,9 @@ Bessel3d implements real-time WebGL visualization of Solar Eclipses. The penumbr
 
 The computation of the contour curves for the maximum magnitude is a very time-consuming process so an attempt to speed up the process with a dedicated fragment shader has been implemented: The first estimate for the moment of maximum magnitude is computed in a dedicated shader. This significantly reduces the computation time. However, the implementation of this pre-processing currently suffers from issues with Intel GPUs.
 
-The code is still heavily under development and currently visualizes only a single fixed solar eclipse. The ephemeris for the Moon is also somewhat inaccurate, which can introduce about 30 km error.
+By default, the code computes all Solar Eclipses between 1900 and 2100. The eclipse can be selected using a search bar. The results seem to be less accurate for eclipses futher away from the year 2000.
+
+The code is still heavily under development. The ephemeris for the Moon is also somewhat inaccurate, which can introduce an error of about 30 km.
 
 Large portion of the computation is performed with [orbits.js](https://github.com/vsr83/orbits.js).
 
@@ -15,3 +17,5 @@ If the visualization has issues, try the non-optimized version at:
 ## Attributions
 1. The JSON Earth map has been generated from [Natural Earth Data](https://www.naturalearthdata.com/) via the website [https://geojson-maps.ash.ms/](https://geojson-maps.ash.ms/).
 2. The Earth day and night textures are from the Solar System Scope [website](https://www.solarsystemscope.com/textures/).
+3. The search bar is implemented with [autoComplete.js](https://tarekraafat.github.io/autoComplete.js/#/). See license at [https://github.com/vsr83/Bessel3d/tree/main/imports/LICENSE.autoComplete.txt](imports/LICENSE.autoComplete.txt). The CSS style file has been modified. 
+4. The controllers have been implemented with [dat.gui](https://github.com/dataarts/dat.gui). See license at [https://github.com/vsr83/Bessel3d/tree/main/imports/LICENSE.dat.gui.txt](imports/LICENSE.dat.gui.txt).

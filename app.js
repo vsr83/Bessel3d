@@ -74,7 +74,44 @@ console.log(listEclipses);
 var endTime = performance.now();
 console.log(`Eclipse computation took ${endTime - startTime} milliseconds`)
 
-let indEclipse = 0;
+let eclipseNames = [];
+let eclipseInds = [];
+let pendingLoad = null;
+
+for (let indEclipse = 0; indEclipse < listEclipses.length; indEclipse++)
+{
+    const eclipse = listEclipses[indEclipse];
+    const timeGreg = orbitsjs.timeGregorian(eclipse.JTmax);
+    const eclipseName = timeGreg.year + "-" + toFixed(timeGreg.month) + "-" + toFixed(timeGreg.mday) + " (" + eclipse.type + ")";
+    eclipseNames.push(eclipseName);
+    eclipseInds[eclipseName] = indEclipse;
+}
+
+// Initialize autocomplete.
+const autoCompleteJS = new autoComplete({
+    placeHolder: "Search YYYY-MM-SS (TYPE)",
+    data: {
+        src: eclipseNames, 
+        cache: true,
+    },
+    resultItem: {
+        highlight: true
+    },
+    resultsList:{
+        tabSelect: true,
+        noResults: true
+    },
+    events: {
+        input: {
+            selection: (event) => {
+                const selection = event.detail.selection.value;
+                autoCompleteJS.input.value = selection;
+                pendingLoad = eclipseInds[selection];
+            }
+        }
+    }
+});
+
 function loadEclipse(eclipseIn)
 {
     const state = {};
@@ -152,7 +189,8 @@ timeSlider.addEventListener('input', (event) => {
 let warpFactorPrev = guiControls.warpFactor;
 
 
-let state = loadEclipse(listEclipses[0])
+let indEclipse = eclipseInds['2019-12-26 (Annular)'];
+let state = loadEclipse(listEclipses[indEclipse]);
 
 requestAnimationFrame(drawScene);
 
@@ -164,6 +202,12 @@ function drawScene(time)
     {
         requestAnimationFrame(drawScene);
         return;
+    }
+
+    if (pendingLoad != null)
+    {
+        state = loadEclipse(listEclipses[pendingLoad]);     
+        pendingLoad = null;   
     }
 
     drawing = true;
