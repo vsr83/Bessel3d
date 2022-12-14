@@ -206,14 +206,14 @@ function drawScene(time)
             // JTstart = todayJT - (JT - JTmin) / warpFactor
 
             JTstart = todayJT - (JTtarget - state.limits.JTmin) / warpFactor;
-            console.log(JTstart+ " " + JTtarget);
+            //console.log(JTstart+ " " + JTtarget);
         }
     }
 
     let T = (JT - 2451545.0)/36525.0;
     let nutPar = orbitsjs.nutationTerms(T);
 
-    if (JT > state.limits.JTmax)
+    if (JT > state.limits.JTmax && sliderTime == null)
     {
         /*
         //indEclipse++;
