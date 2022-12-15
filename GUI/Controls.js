@@ -72,8 +72,8 @@ gui = new dat.GUI();
 
 const visibilityFolder = gui.addFolder('Visibility');
 displayControls.enableMap = visibilityFolder.add(guiControls, 'enableMap').name('Map Lines');
-displayControls.enableEclipse = visibilityFolder.add(guiControls, 'enableEclipse').name('Solar Eclipse');
-displayControls.enableUmbra = visibilityFolder.add(guiControls, 'enableUmbra').name('Solar Umbra');
+displayControls.enableEclipse = visibilityFolder.add(guiControls, 'enableEclipse').name('Penumbra');
+displayControls.enableUmbra = visibilityFolder.add(guiControls, 'enableUmbra').name('Umbra');
 displayControls.enableMagContours = visibilityFolder.add(guiControls, 'enableMagContours').name('Mag. Contours');
 
 displayControls.enableDerContours = visibilityFolder.add(guiControls, 'enableDerContours').name('Max. Contours');
