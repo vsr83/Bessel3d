@@ -74,6 +74,7 @@ class PlanetShaders
         // Flags for drawing of the textures and the eclipses.
         uniform bool u_draw_texture;
         uniform bool u_show_eclipse;
+        uniform bool u_grayscale;
 
         // ECEF coordinates for the Moon and the Sun. The Sun vector has been scaled
         // to have length of 1 to avoid issues with the arithmetic.
@@ -159,7 +160,14 @@ class PlanetShaders
 
                 return rEnu;
             }
-        }        
+        }
+        vec4 toGrayscale(in vec4 rgb)
+        {
+            float g =  0.3 * rgb.x + 0.59 * rgb.y + 0.11 * rgb.z;
+            vec4 outC;
+            outC = vec4(g, g, g, rgb.w);
+            return outC;
+        }
         
         void main() 
         {
@@ -228,6 +236,11 @@ class PlanetShaders
             else 
             {
                 outColor = vec4(1.0, 1.0, 1.0, 1.0);
+            }
+
+            if (u_grayscale)
+            {
+                outColor = toGrayscale(outColor);
             }
         }
         `;
@@ -573,6 +586,7 @@ class PlanetShaders
         const sunZLocation = gl.getUniformLocation(this.program, "u_sun_z");
         const sunDiamLocation = gl.getUniformLocation(this.program, "u_sun_diam");
         const showEclipseLocation = gl.getUniformLocation(this.program, "u_show_eclipse");
+        const grayscaleLocation = gl.getUniformLocation(this.program, "u_grayscale");
 
         if (drawTexture)
         {
@@ -581,6 +595,15 @@ class PlanetShaders
         else
         {
             gl.uniform1f(drawTextureLocation, 0);            
+        }
+
+        if (guiControls.grayscale)
+        {
+            gl.uniform1f(grayscaleLocation, 1);
+        }
+        else 
+        {
+            gl.uniform1f(grayscaleLocation, 0);
         }
 
         if (showEclipse)

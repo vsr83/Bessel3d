@@ -209,6 +209,11 @@ function drawScene(time)
         state = loadEclipse(listEclipses[pendingLoad]);     
         pendingLoad = null;   
     }
+    // Avoid divisions by zero:
+    let warpFactorNew = guiControls.warpFactor;
+    if (warpFactorNew == 0) {
+        warpFactorNew = 0.00001;
+    }
 
     drawing = true;
 
@@ -227,18 +232,18 @@ function drawScene(time)
     const todayJT = orbitsjs.timeJulianTs(today).JT;
 
     // Compute Julian time.
-    if (warpFactorPrev != guiControls.warpFactor)
+    if (warpFactorPrev != warpFactorNew)
     {
         // warp * (todayJT - JTstartnew) = warpPrev * (todayJT - JTstartold) 
         // todayJT - JTstartnew = (warpPrev / warp) * (todayJT - JTstartold)
         // JTstartnew = todayJT - (warpPrev / warp) * (todayJT - JTstartold)
-        JTstart = todayJT - (warpFactorPrev / guiControls.warpFactor)
+        JTstart = todayJT - (warpFactorPrev / warpFactorNew)
                 * (todayJT - JTstart);
     }
-    warpFactorPrev = guiControls.warpFactor;
+    warpFactorPrev = warpFactorNew;
 
     //const JT = orbitsjs.timeJulianTs(today).JT + (JTeclipse - JTstart);
-    let JT = guiControls.warpFactor * (todayJT - JTstart) + state.limits.JTmin;
+    let JT = warpFactorNew * (todayJT - JTstart) + state.limits.JTmin;
 
     if (sliderTime == null)
     {
@@ -263,7 +268,7 @@ function drawScene(time)
             // (JT - JTmin) / warpFactor = todayJT - JTstart
             // JTstart = todayJT - (JT - JTmin) / warpFactor
 
-            JTstart = todayJT - (JTtarget - state.limits.JTmin) / guiControls.warpFactor;
+            JTstart = todayJT - (JTtarget - state.limits.JTmin) / warpFactorNew;
             //console.log(JTstart+ " " + JTtarget);
         }
     }

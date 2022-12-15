@@ -49,6 +49,8 @@ guiControls = new function()
     this.warpFactor = 500.0;
     this.skipToNext = false;
 
+    this.grayscale = false;
+
     this.GitHub = function() {
         window.open("https://github.com/vsr83/Bessel3d");
     };
@@ -113,6 +115,7 @@ displayControls.drawTitle = visibilityFolder.add(guiControls, 'drawTitle').name(
 }); 
 
 const appearanceFolder = gui.addFolder('Appearance');
+appearanceFolder.add(guiControls, 'grayscale').name('Grayscale');
 displayControls.gridLonResolution = appearanceFolder.add(guiControls, 'gridLonResolution', 1, 180, 1)
     .name('Grid Lon. Resolution')
     .onChange(function()
@@ -155,6 +158,6 @@ cameraControls.lat = cameraFolder.add(guiControls, 'lat', -180, 180, 0.1).name('
 cameraControls.distance = cameraFolder.add(guiControls, 'distance', 6378.1370*1.01, 1000000, 100).name('Distance');
 
 const timeFolder = gui.addFolder('Time');
-timeControls.warpFactor = timeFolder.add(guiControls, 'warpFactor', -1000, 1000, 1);
+timeControls.warpFactor = timeFolder.add(guiControls, 'warpFactor', -1000, 1000, 1).name('Warp Factor');
 
 gui.add(guiControls, 'GitHub');
