@@ -41,6 +41,8 @@ guiControls = new function()
     this.colorRiseSet = [0, 255, 0];
     this.colorMagContour = [127, 127, 127];
     this.colorDerContour = [127, 127, 127];
+    this.colorSubsolar = [255, 255, 255];
+    this.colorSublunar = [255, 255, 255];
 
     this.enableRiseSet = true; 
     this.enableContact = true; 
@@ -142,12 +144,15 @@ appearanceFolder.addColor(guiControls, 'colorMap').name('Map Color')
     earthShaders.setColorsMap();
 });
 appearanceFolder.addColor(guiControls, 'colorText').name('Text');
+appearanceFolder.addColor(guiControls, 'colorUmbra').name('Umbra');
 appearanceFolder.addColor(guiControls, 'colorContact').name('Contact Points');
 appearanceFolder.addColor(guiControls, 'colorCentral').name('Central Line');
 appearanceFolder.addColor(guiControls, 'colorOrbit').name('Orbits');
 appearanceFolder.addColor(guiControls, 'colorRiseSet').name('Rise/Set Lines');
 appearanceFolder.addColor(guiControls, 'colorMagContour').name('Mag. Contours');
 appearanceFolder.addColor(guiControls, 'colorDerContour').name('Max. Contours');
+appearanceFolder.addColor(guiControls, 'colorSubsolar').name('Subsolar Point');
+appearanceFolder.addColor(guiControls, 'colorSublunar').name('Sublunar Point');
 
 const cameraFolder = gui.addFolder('Camera');
 cameraFolder.add(guiControls, 'fov', 1, 180, 1).name('Field of View');

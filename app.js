@@ -173,6 +173,7 @@ function loadEclipse(eclipseIn)
     rotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstPenumbra);
     rotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstPenumbra);
 
+    JTstart = orbitsjs.timeJulianTs(new Date()).JT;
     return state;
 }
 
@@ -385,8 +386,10 @@ function drawScene(time)
         osvMoonEfi.r, 
         osvSunEfi.r);
 
+    lineShaders.colorOrbit = guiControls.colorSubsolar;
     drawDistant(osvSunEfi.r, 695700000.0 * 2.0, matrix, guiControls.enableSubsolar,
         guiControls.enableSubsolarLine);
+    lineShaders.colorOrbit = guiControls.colorSublunar;
     drawDistant(osvMoonEfi.r, 1737400.0 * 2.0, matrix, guiControls.enableSublunar,
         guiControls.enableSublunarLine);
     drawCentralLine(matrix, wgs84.lat, wgs84.lon, osvMoonEfi.r, state.centralLine);
