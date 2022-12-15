@@ -75,6 +75,7 @@ class PlanetShaders
         uniform bool u_draw_texture;
         uniform bool u_show_eclipse;
         uniform bool u_grayscale;
+        uniform float u_texture_brightness;
 
         // ECEF coordinates for the Moon and the Sun. The Sun vector has been scaled
         // to have length of 1 to avoid issues with the arithmetic.
@@ -189,22 +190,22 @@ class PlanetShaders
                 if (altitude > 0.0)
                 {
                     // Day. 
-                    outColor = texture(u_imageDay, v_texcoord);
+                    outColor = u_texture_brightness * texture(u_imageDay, v_texcoord);
                 }
                 else if (altitude > -6.0)
                 {
                     // Civil twilight.
-                    outColor = mix(texture(u_imageNight, v_texcoord), texture(u_imageDay, v_texcoord), 0.75);
+                    outColor = mix(texture(u_imageNight, v_texcoord), u_texture_brightness * texture(u_imageDay, v_texcoord), 0.75);
                 }
                 else if (altitude > -12.0)
                 {
                     // Nautical twilight.
-                    outColor = mix(texture(u_imageNight, v_texcoord), texture(u_imageDay, v_texcoord), 0.5);
+                    outColor = mix(texture(u_imageNight, v_texcoord), u_texture_brightness * texture(u_imageDay, v_texcoord), 0.5);
                 }
                 else if (altitude > -18.0)
                 {
                     // Astronomical twilight.
-                    outColor = mix(texture(u_imageNight, v_texcoord), texture(u_imageDay, v_texcoord), 0.25);
+                    outColor = mix(texture(u_imageNight, v_texcoord), u_texture_brightness * texture(u_imageDay, v_texcoord), 0.25);
                 }
                 else
                 {
@@ -229,7 +230,7 @@ class PlanetShaders
                     //else 
                     if (angleDiff < 0.5 * (u_sun_diam + angularDiamMoon))
                     {
-                        outColor = mix(texture(u_imageNight, v_texcoord), texture(u_imageDay, v_texcoord), 0.5);
+                        outColor = mix(texture(u_imageNight, v_texcoord), u_texture_brightness * texture(u_imageDay, v_texcoord), 0.5);
                     }
                 }
             }
@@ -587,6 +588,7 @@ class PlanetShaders
         const sunDiamLocation = gl.getUniformLocation(this.program, "u_sun_diam");
         const showEclipseLocation = gl.getUniformLocation(this.program, "u_show_eclipse");
         const grayscaleLocation = gl.getUniformLocation(this.program, "u_grayscale");
+        const brightnessLocation = gl.getUniformLocation(this.program, "u_texture_brightness");
 
         if (drawTexture)
         {
@@ -623,6 +625,7 @@ class PlanetShaders
         {
             gl.uniform1f(showEclipseLocation, 0);            
         }
+        gl.uniform1f(brightnessLocation, guiControls.brightness);
 
 
         // Draw the sphere.

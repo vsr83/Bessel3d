@@ -31,6 +31,7 @@ guiControls = new function()
     this.gridLonResolution = 30;
     this.gridLatResolution = 30; 
 
+    this.brightness = 0.8;
     this.colorGrid = [80, 80, 80];
     this.colorMap = [80, 80, 120];
     this.colorText = [255, 255, 255];
@@ -118,6 +119,8 @@ displayControls.drawTitle = visibilityFolder.add(guiControls, 'drawTitle').name(
 
 const appearanceFolder = gui.addFolder('Appearance');
 appearanceFolder.add(guiControls, 'grayscale').name('Grayscale');
+appearanceFolder.add(guiControls, 'brightness',0, 1.0, 0.01).name('Brightness');
+
 displayControls.gridLonResolution = appearanceFolder.add(guiControls, 'gridLonResolution', 1, 180, 1)
     .name('Grid Lon. Resolution')
     .onChange(function()
