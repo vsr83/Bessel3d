@@ -219,7 +219,24 @@ body {
 { 
   width: 900px;
 }
+
 #timeRange
+{ 
+  -webkit-appearance: none;
+  appearance: none;
+  z-index : 11;
+  position: absolute; 
+  left: 40px; 
+  bottom: 0px; 
+  outline: none;
+  opacity: 0.5;
+  margin-left: auto; 
+  margin-right: auto; 
+  width: 360px;
+  cursor : pointer;
+  background-color: #303030;
+}
+#buttonPrev
 { 
   -webkit-appearance: none;
   appearance: none;
@@ -228,10 +245,30 @@ body {
   left: 20px; 
   bottom: 0px; 
   outline: none;
+  border: none; 
+  color: white;
   opacity: 0.5;
   margin-left: auto; 
   margin-right: auto; 
-  width: 400px;
+  width: 20px;
+  cursor : pointer;
+  background-color: #303030;
+}
+#buttonNext
+{ 
+  -webkit-appearance: none;
+  appearance: none;
+  z-index : 11;
+  position: absolute; 
+  left: 400px; 
+  bottom: 0px; 
+  outline: none;
+  border: none; 
+  color: white;
+  opacity: 0.5;
+  margin-left: auto; 
+  margin-right: auto; 
+  width: 20px;
   cursor : pointer;
   background-color: #303030;
 }

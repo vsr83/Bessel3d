@@ -252,6 +252,22 @@ timeSlider.addEventListener('input', (event) => {
 // Warp factor during the previous frame.
 let warpFactorPrev = guiControls.warpFactor;
 
+// 
+const prevButton = document.getElementById("buttonPrev");
+const nextButton = document.getElementById("buttonNext");
+nextButton.onclick = function() 
+{
+    pendingLoad = (indEclipse + 1) % listEclipses.length;
+}
+prevButton.onclick = function() 
+{
+    pendingLoad = indEclipse - 1;
+    if (pendingLoad < 0)
+    {
+        pendingLoad = listEclipses.length - 1;
+    }
+}
+
 // Eclipse at init.
 let indEclipse = eclipseInds['2019-12-26 (Annular)'];
 let state = loadEclipse(listEclipses[indEclipse]);
@@ -270,7 +286,8 @@ function drawScene(time)
 
     if (pendingLoad != null)
     {
-        state = loadEclipse(listEclipses[pendingLoad]);     
+        state = loadEclipse(listEclipses[pendingLoad]);
+        indEclipse = pendingLoad;   
         pendingLoad = null;   
     }
     // Avoid divisions by zero:
