@@ -1,3 +1,10 @@
+/**
+ * Create captions for the magnitude contours.
+ * 
+ * @param {*} derContours 
+ *      The maximum contours.
+ * @returns Captions for the magnitude and maximum contours.
+ */
 function createMagCaptions(derContours)
 {
     const magCaptionList = [];
@@ -28,11 +35,22 @@ function createMagCaptions(derContours)
 
             const timeGreg = orbitsjs.timeGregorian(Number(value));
             //console.log(timeGreg);
-            maxCaptionList.push({
-                lat : lines[0][0][0]-3,
-                lon : lines[0][0][1]-2,
-                text : timeGreg.hour + ":" + toFixed(timeGreg.minute),
-            });
+            if (Math.abs(lines[0][0][0]) < Math.abs(lines[lines.length - 1][0][0]))
+            {
+                maxCaptionList.push({
+                    lat : lines[0][0][0]-3,
+                    lon : lines[0][0][1]-2,
+                    text : timeGreg.hour + ":" + toFixed(timeGreg.minute),
+                });
+            }
+            else 
+            {
+                maxCaptionList.push({
+                    lat : lines[lines.length - 1][0][0]+3,
+                    lon : lines[lines.length - 1][0][1]-2,
+                    text : timeGreg.hour + ":" + toFixed(timeGreg.minute),
+                });
+            }
         }
     }
 
@@ -91,6 +109,14 @@ function createMagCaptions(derContours)
     return {maxCaptions : maxCaptionList, magCaptions : magCaptionList};
 }
 
+/**
+ * Draw an array of captions.
+ * 
+ * @param {*} matrix 
+ *     The view matrix.
+ * @param {*} captions 
+ *     The array of captions.
+ */
 function drawCaptions(matrix, captions)
 {
     for (let indCaption = 0; indCaption < captions.length; indCaption++)

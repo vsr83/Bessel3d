@@ -61,6 +61,9 @@ function computeFirstLastContact(eclipse, limits)
     let lonLastUmbra = NaN;
     let latLastUmbra = NaN;
 
+    // The basic approach for all 4 contacts points is the same. We first find the
+    // contact with 2-minute time steps. Thereafter, we repeat the 2-minute interval 
+    // with 1-second time steps.
 
     for (let JT = limits.JTmin; JT < limits.JTmax; JT += 2/1440)
     {
@@ -149,9 +152,6 @@ function computeFirstLastContact(eclipse, limits)
             }
         }
     }
-
-
-
 
     for (let JT = limits.JTmin; JT < limits.JTmax; JT += 2/1440)
     {
@@ -535,6 +535,23 @@ const charLineMap = {
            [0.4, 0.2, 0.6, 0.2],
            [0.4, 0.0, 0.4, 0.2]]
 };
+
+/**
+ * Draw text.
+ * 
+ * @param {*} matrix
+ *      The view matrix. 
+ * @param {*} lat 
+ *      Start latitude.
+ * @param {*} lon
+ *      Start longitude. 
+ * @param {*} s
+ *      String of text. 
+ * @param {*} color 
+ *      Color of the text.
+ * @param {*} upDir 
+ *      Direction (lon, lat, up).
+ */
 function drawText(matrix, lat, lon, s, color, upDir)
 {
     if (!guiControls.enableCaptions)
@@ -568,8 +585,7 @@ function drawText(matrix, lat, lon, s, color, upDir)
         for (let indLine = 0; indLine < lines.length; indLine++)
         {
             const line = lines[indLine];
-            //let pointStart = orbitsjs.coordWgs84Efi(latStart + line[1], lonStart + line[0]*0.6, 10000);
-            //let pointEnd = orbitsjs.coordWgs84Efi(latStart + line[3], lonStart + line[2]*0.6, 10000);
+
             let pointStart = orbitsjs.coordWgs84Efi(
                 latStart + 1.0*(line[1] * upDir[1] + line[0] * rightDir[1]) * scale, 
                 lonStart + 0.6*(line[1] * upDir[0] + line[0] * rightDir[0]) * scale, 
@@ -587,6 +603,7 @@ function drawText(matrix, lat, lon, s, color, upDir)
     {
         color = guiControls.colorText;
     }
+
     lineShaders.colorOrbit = color;
     lineShaders.setGeometry(p);
     lineShaders.draw(matrix);

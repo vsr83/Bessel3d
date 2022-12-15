@@ -339,13 +339,17 @@ function initContoursGpu(gl, program)
 }
 
 /**
- * Compute maximum eclipse magnitude at a point.
+ * Compute maximum magnitude for eclipse magnitude at a point.
  * 
  * @param {*} lon 
+ *      Longitude of the point.
  * @param {*} lat 
+ *      Latitude of the point.
  * @param {*} posArrayMoon 
+ *      Array of EFI positions of the Moon.
  * @param {*} posArraySun 
- * @returns 
+ *      Array of EFI positions of the Sun.
+ * @returns Maximum magnitude.
  */
 function computeMaxMag(lat, lon, posArrayMoon, posArraySun)
 {
@@ -750,6 +754,19 @@ function drawContours(matrix, contourPointsGpu, derContours)
     }
 }
 
+/**
+ * Create contours for the umbra.
+ * 
+ * @param {*} latCenter 
+ *     Latitude of the center of the umbra.
+ * @param {*} lonCenter 
+ *     Longitude of the center of the umbra.
+ * @param {*} osvSunEfi 
+ *     OSV for the Sun in EFI frame.
+ * @param {*} osvMoonEfi 
+ *     OSV for the Moon in the EFI frame.
+ * @returns Boolean grid and limits for the umbra.
+ */
 function createUmbraContour(latCenter, lonCenter, osvSunEfi, osvMoonEfi)
 {
     let umbraGrid = [];

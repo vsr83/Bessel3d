@@ -177,7 +177,68 @@ function loadEclipse(eclipseIn)
     return state;
 }
 
+/**
+ * Compute rotation to the target.
+ * 
+ * @param {*} JT 
+ *      Julian time.
+ * @param {*} state 
+ *      State.
+ * @param {*} wgs84 
+ *      WGS84 coordinates of the intersection with the Sun-Moon axis.
+ * @returns Object with targetRotZ and targetRotX rotations.
+ */
+function computeTarget(JT, state, wgs84)
+{
+    let targetRotZ = 0;
+    let targetRotX = 0;
+    if (isNaN(state.contactPoints.JTfirstUmbra))
+    {
+        if (JT < state.contactPoints.JTfirstPenumbra)
+        {
+            targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstPenumbra);
+            targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstPenumbra);
+        }
+        else if (JT > state.contactPoints.JTlastPenumbra)
+        {
+            targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonLastPenumbra);
+            targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latLastPenumbra);
+        }
+        else 
+        {
+            if (state.contactPoints.lonLastPenumbra < state.contactPoints.lonFirstPenumbra)
+                state.contactPoints.lonLastPenumbra += 360.0;
+
+            targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstPenumbra -
+                (state.contactPoints.lonLastPenumbra - state.contactPoints.lonFirstPenumbra)
+               *(JT - state.contactPoints.JTfirstPenumbra) / (state.contactPoints.JTlastPenumbra - state.contactPoints.JTfirstPenumbra));
+            targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstPenumbra +
+                (state.contactPoints.latLastPenumbra - state.contactPoints.latFirstPenumbra)
+               *(JT - state.contactPoints.JTfirstPenumbra) / (state.contactPoints.JTlastPenumbra - state.contactPoints.JTfirstPenumbra));
+        }
+    }
+    else if (JT < state.contactPoints.JTfirstUmbra)
+    {
+        targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstUmbra);
+        targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstUmbra);
+    }
+    else if (JT > state.contactPoints.JTlastUmbra)
+    {
+        targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonLastUmbra);
+        targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latLastUmbra);
+    }
+    else 
+    {
+        targetRotZ = orbitsjs.deg2Rad(-90 - wgs84.lon);
+        targetRotX = orbitsjs.deg2Rad(-90 + wgs84.lat);    
+    }
+
+    return {targetRotX : targetRotX, targetRotZ : targetRotZ};
+}
+
+// Time of the latest time slider input event.
 let sliderTime = null;
+// Initial value of the time slider.
 let sliderStartValue = 0;
 const timeSlider = document.getElementById("timeRange");
 timeSlider.addEventListener('input', (event) => {
@@ -187,9 +248,11 @@ timeSlider.addEventListener('input', (event) => {
         sliderStartValue = timeSlider.value;
     }
 });
+
+// Warp factor during the previous frame.
 let warpFactorPrev = guiControls.warpFactor;
 
-
+// Eclipse at init.
 let indEclipse = eclipseInds['2019-12-26 (Annular)'];
 let state = loadEclipse(listEclipses[indEclipse]);
 
@@ -274,9 +337,12 @@ function drawScene(time)
         }
     }
 
+    // Compute nutation parameters.
     let T = (JT - 2451545.0)/36525.0;
     let nutPar = orbitsjs.nutationTerms(T);
 
+    // When time exceeds limit end time of the eclipse, return to the limit 
+    // start time of the eclipse. 
     if (JT > state.limits.JTmax && sliderTime == null)
     {
        JTstart = todayJT;
@@ -286,6 +352,7 @@ function drawScene(time)
        JTstart = todayJT;
     }
 
+    // Update time and contact point captions.
     const timeGreg = orbitsjs.timeGregorian(JT);
     const dateStr = createTimestamp(JT) + " TT - " + JT + "<br>" 
                   + "P1 : First contact (Penumbra): " + createTimestamp(state.contactPoints.JTfirstPenumbra)+ "<br>" 
@@ -295,9 +362,12 @@ function drawScene(time)
     const dateText = document.getElementById("dateText");
     dateText.innerHTML = dateStr;
 
+    // Besselian elements.
     const bessel = orbitsjs.besselianSolarWithDelta(state.eclipse, JT, 1/1440);
+    // Compute position on the central line.
     const centralLineJT = orbitsjs.besselianCentralLine(state.eclipse, bessel, JT);
 
+    // Compute the intersection of the Sun-Moon axis with Earth.
     const osvFund = {
         r : [bessel.x, bessel.y, centralLineJT.zeta],
         v : [0, 0, 0],
@@ -311,48 +381,8 @@ function drawScene(time)
     const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
     const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
 
-    let targetRotZ = 0;
-    let targetRotX = 0;
-    if (isNaN(state.contactPoints.JTfirstUmbra))
-    {
-        if (JT < state.contactPoints.JTfirstPenumbra)
-        {
-            targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstPenumbra);
-            targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstPenumbra);
-        }
-        else if (JT > state.contactPoints.JTlastPenumbra)
-        {
-            targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonLastPenumbra);
-            targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latLastPenumbra);
-        }
-        else 
-        {
-            if (state.contactPoints.lonLastPenumbra < state.contactPoints.lonFirstPenumbra)
-                state.contactPoints.lonLastPenumbra += 360.0;
-
-            targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstPenumbra -
-                (state.contactPoints.lonLastPenumbra - state.contactPoints.lonFirstPenumbra)
-               *(JT - state.contactPoints.JTfirstPenumbra) / (state.contactPoints.JTlastPenumbra - state.contactPoints.JTfirstPenumbra));
-            targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstPenumbra +
-                (state.contactPoints.latLastPenumbra - state.contactPoints.latFirstPenumbra)
-               *(JT - state.contactPoints.JTfirstPenumbra) / (state.contactPoints.JTlastPenumbra - state.contactPoints.JTfirstPenumbra));
-        }
-    }
-    else if (JT < state.contactPoints.JTfirstUmbra)
-    {
-        targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstUmbra);
-        targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstUmbra);
-    }
-    else if (JT > state.contactPoints.JTlastUmbra)
-    {
-        targetRotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonLastUmbra);
-        targetRotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latLastUmbra);
-    }
-    else 
-    {
-        targetRotZ = orbitsjs.deg2Rad(-90 - wgs84.lon);
-        targetRotX = orbitsjs.deg2Rad(-90 + wgs84.lat);    
-    }
+    // Compute rotations required to point to the target.
+    let {targetRotX, targetRotZ} = computeTarget(JT, state, wgs84);
 
     if (guiControls.lockLonRot)
     {
@@ -363,6 +393,7 @@ function drawScene(time)
         rotX = targetRotX;
     }
 
+    // Compute position of the Sun and the Moon in the EFI frame for the shader.
     const osvSunEfi = orbitsjs.computeOsvSunEfi(JT, nutPar);
     const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JT, nutPar);
 
@@ -378,6 +409,7 @@ function drawScene(time)
 
     const matrix = createViewMatrix();
 
+    // Draw the Earth.
     earthShaders.draw(matrix, 
         guiControls.enableTextures, 
         guiControls.enableGrid, 
@@ -386,16 +418,26 @@ function drawScene(time)
         osvMoonEfi.r, 
         osvSunEfi.r);
 
+    // Draw the Sun and the Moon and lines to the subsolar and sublunar points.
     lineShaders.colorOrbit = guiControls.colorSubsolar;
     drawDistant(osvSunEfi.r, 695700000.0 * 2.0, matrix, guiControls.enableSubsolar,
         guiControls.enableSubsolarLine);
     lineShaders.colorOrbit = guiControls.colorSublunar;
     drawDistant(osvMoonEfi.r, 1737400.0 * 2.0, matrix, guiControls.enableSublunar,
         guiControls.enableSublunarLine);
+
+    // Draw curves.
     drawCentralLine(matrix, wgs84.lat, wgs84.lon, osvMoonEfi.r, state.centralLine);
     drawRiseSet(matrix, state.riseSetPoints);
+
+    // Draw contact points.
+    drawContactPoints(matrix, state.contactPoints);
+
+    // Draw planes.
     drawEcliptic(matrix, nutPar, JT);
     drawEquator(matrix);
+
+    // Draw magnitude contours.
     drawContours(matrix, state.contourPointsGpu, state.contourPointsDer);
 
     if (guiControls.enableMagContours)
@@ -407,6 +449,7 @@ function drawScene(time)
         drawCaptions(matrix, state.maxCaptions);
     }
 
+    // Compute and draw umbra.
     let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi);
     const contoursUmbra = orbitsjs.createContours(umbraLimits.lonMin, umbraLimits.lonMax, 
         umbraLimits.latMin, umbraLimits.latMax, 0.1, umbraGrid, [1.0], [100.0]);
@@ -422,9 +465,6 @@ function drawScene(time)
             lineShaders.draw(matrix);
         }
     }
-
-    lineShaders.colorOrbit = [255, 0, 0];
-    drawContactPoints(matrix, state.contactPoints);
 
     // Call drawScene again next frame
     requestAnimationFrame(drawScene);
