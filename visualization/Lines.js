@@ -554,6 +554,7 @@ const charLineMap = {
  */
 function drawText(matrix, lat, lon, s, color, upDir)
 {
+    
     if (!guiControls.enableCaptions)
     {
         return;
@@ -567,13 +568,39 @@ function drawText(matrix, lat, lon, s, color, upDir)
     const angleUp = orbitsjs.atan2d(upDir[1], upDir[0]);
     const rightDir = [orbitsjs.cosd(angleUp - 90), orbitsjs.sind(angleUp - 90), 0];
 
-    const scale = 1.0 / Math.abs(orbitsjs.cosd(lat));
+    // x = cosd(lat) * cosd(lon)
+    // y = cosd(lat) * sind(lon)
+    // z = sind(lat)
+
+    // In terms of radians. Degree derivatives are proportional.
+    // dx/dlat = -sin(lat) * cos(lon)
+    // dy/dlat = -sin(lat) * sin(lon) 
+    // dz/dlat =  cos(lat)
+    // dx/dlon = -cos(lat) * sin(lon)
+    // dy/dlon =  cos(lat) * cos(lon)
+    // dz/dlon =  0
+
+    let dirLon = [
+        -orbitsjs.cosd(lat) * orbitsjs.sind(lon),
+         orbitsjs.cosd(lat) * orbitsjs.cosd(lon),
+         0.0
+    ];
+    let dirLat = [
+        -orbitsjs.sind(lat) * orbitsjs.cosd(lon),
+        -orbitsjs.sind(lat) * orbitsjs.sind(lon),
+         orbitsjs.cosd(lat)
+    ];
+    // Probably unnecessary.
+    dirLon = orbitsjs.vecMul(dirLon, 1/orbitsjs.norm(dirLon));
+    dirLat = orbitsjs.vecMul(dirLat, 1/orbitsjs.norm(dirLat));
+
+
+    let scale = 100000.0;
 
     const p = [];
     for (let indChar = 0; indChar < s.length; indChar++)
     {
-        const latStart = lat + rightDir[1] * indChar * 1.0 * scale;
-        const lonStart = lon + rightDir[0] * indChar * 0.8 * scale;
+        let pStart = orbitsjs.coordWgs84Efi(lat, lon, 10000.0);
 
         if (!charLineMap.hasOwnProperty(s[indChar]))
         {
@@ -586,14 +613,13 @@ function drawText(matrix, lat, lon, s, color, upDir)
         {
             const line = lines[indLine];
 
-            let pointStart = orbitsjs.coordWgs84Efi(
-                latStart + 1.0*(line[1] * upDir[1] + line[0] * rightDir[1]) * scale, 
-                lonStart + 0.6*(line[1] * upDir[0] + line[0] * rightDir[0]) * scale, 
-                10000);
-            let pointEnd = orbitsjs.coordWgs84Efi(
-                latStart + 1.0*(line[3] * upDir[1] + line[2] * rightDir[1]) * scale, 
-                lonStart + 0.6*(line[3] * upDir[0] + line[2] * rightDir[0]) * scale, 
-                10000);
+            let pointStart = orbitsjs.linComb(
+                [1, scale * (indChar + 0.8*line[0]), scale * line[1]], 
+                [pStart, dirLon, dirLat]);
+            let pointEnd = orbitsjs.linComb(
+                [1, scale * (indChar + 0.8*line[2]), scale * line[3]], 
+                [pStart, dirLon, dirLat]);
+    
             p.push(orbitsjs.vecMul(pointStart, 0.001));
             p.push(orbitsjs.vecMul(pointEnd, 0.001));
         }

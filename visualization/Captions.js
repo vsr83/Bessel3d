@@ -122,10 +122,6 @@ function drawCaptions(matrix, captions)
     for (let indCaption = 0; indCaption < captions.length; indCaption++)
     {
         const caption = captions[indCaption];
-        if (Math.abs(caption.lat) > 70)
-        {
-            continue;
-        }
         drawText(matrix, caption.lat, caption.lon, caption.text, caption.upDir);
     }    
 }
