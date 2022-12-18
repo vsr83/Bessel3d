@@ -96,7 +96,7 @@ function createMagCaptions(derContours)
                     0
                 ];
     
-                console.log(pointStart + " " + level);
+                //console.log(pointStart + " " + level);
 
                 magCaptionList.push({
                     lat : pointStart[0]+0.5,
