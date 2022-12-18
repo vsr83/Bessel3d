@@ -1,6 +1,6 @@
 "use strict";
 
-console.log(useGpu);
+var contourWorker = null;
 
 var gl = null;
 var earthShaders = null;
@@ -114,67 +114,46 @@ const autoCompleteJS = new autoComplete({
 
 function loadEclipse(eclipseIn)
 {
-    const state = {};
-    state.eclipse = eclipseIn;
+    if (contourWorker != null)
+    {
+        contourWorker.terminate();
+    }
+
+    contourWorker = new Worker("computation/ContourWorker.js");
+    contourWorker.addEventListener('message', function(e) {
+        console.log("Worker has provided data.");
+        state = e.data;
+    }, false);
+    
+    contourWorker.postMessage(eclipseIn);
+    const stateOut = {};
+    stateOut.eclipse = eclipseIn;
 
     // Update title:
-    state.title = createTimestamp(state.eclipse.JTmax) + " (" + state.eclipse.type + ")";
+    stateOut.title = createTimestamp(stateOut.eclipse.JTmax) + " (" + stateOut.eclipse.type + ")";
     const nameText = document.getElementById("nameText");
-    nameText.innerText = state.title;
+    nameText.innerText = stateOut.title;
 
-    startTime = performance.now()
-    state.gridSize = 0.25;
-    
-    state.contours = null;
-    state.limits = {JTmin : state.eclipse.JTmax - 5/24, JTmax : state.eclipse.JTmax + 5/24};
-    
-    if (useGpu)
-    {
-        let {gpuLimits, gpuGridData} = computeContours(glHidden, contoursProgram, state.limits);
-        state.contours = orbitsjs.createContours(gpuLimits.lonMin, gpuLimits.lonMax, 
-            gpuLimits.latMin, gpuLimits.latMax, state.gridSize, gpuGridData, [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
-        state.limits.lonMin = gpuLimits.lonMin;
-        state.limits.lonMax = gpuLimits.lonMax;
-        state.limits.latMin = gpuLimits.latMin;
-        state.limits.latMax = gpuLimits.latMax;
-    }
-    else
-    {
-        state.limits = computeLimits(state.eclipse, 2.0, 5.0/1440.0);
-        state.contours = createContours(state.limits, 0.5, 2.0/1440);
-    }
-    endTime = performance.now();
-    console.log(`Contour creation took ${endTime - startTime} milliseconds`);
-        
-    //const limits = gpuLimits;
-    state.limits.temporalRes = 1/1440;
-    
-    startTime = performance.now()
-    state.derContours = createDerContours(state.limits, 1.0, 1/1440);
-    state.contourPointsDer = contourToPoints(state.derContours);
-    endTime = performance.now()
-    console.log(`Contour creation took ${endTime - startTime} milliseconds`)
-    
-    startTime = performance.now()
-    state.centralLine = computeCentralLine(state.eclipse, state.limits, 1/1440);
-    state.riseSetPoints = computeRiseSet(state.eclipse, state.limits, 1/3000);
-    state.contourPointsGpu = contourToPoints(state.contours);
-    endTime = performance.now()
-    console.log(`line creation took ${endTime - startTime} milliseconds`)
-    
-    let {magCaptions, maxCaptions} = createMagCaptions(state.derContours);
-    state.magCaptions = magCaptions;
-    state.maxCaptions = maxCaptions;
-    state.contactPoints = computeFirstLastContact(state.eclipse, state.limits);    
+    stateOut.contours = null;
+    stateOut.limits = {JTmin : stateOut.eclipse.JTmax - 5/24, JTmax : stateOut.eclipse.JTmax + 5/24};    
+    stateOut.limits = computeLimits(stateOut.eclipse, 4.0, 5.0/1440.0);
+    stateOut.contours = [];    
+    stateOut.contourPointsDer = [];    
+    stateOut.centralLine = computeCentralLine(stateOut.eclipse, stateOut.limits, 3/1440);
+    stateOut.riseSetPoints = computeRiseSet(stateOut.eclipse, stateOut.limits, 3/3000);
+    stateOut.contourPointsGpu = contourToPoints(stateOut.contours);
+    stateOut.magCaptions = [];
+    stateOut.maxCaptions = [];
+    stateOut.contactPoints = computeFirstLastContact(stateOut.eclipse, stateOut.limits);    
 
-    state.limits.JTmin = state.contactPoints.JTfirstPenumbra - 60/1440;
-    state.limits.JTax = state.contactPoints.JTlastPenumbra + 60/1440;
+    stateOut.limits.JTmin = stateOut.contactPoints.JTfirstPenumbra - 60/1440;
+    stateOut.limits.JTax = stateOut.contactPoints.JTlastPenumbra + 60/1440;
 
-    rotZ = orbitsjs.deg2Rad(-90 - state.contactPoints.lonFirstPenumbra);
-    rotX = orbitsjs.deg2Rad(-90 + state.contactPoints.latFirstPenumbra);
+    rotZ = orbitsjs.deg2Rad(-90 - stateOut.contactPoints.lonFirstPenumbra);
+    rotX = orbitsjs.deg2Rad(-90 + stateOut.contactPoints.latFirstPenumbra);
 
     JTstart = orbitsjs.timeJulianTs(new Date()).JT;
-    return state;
+    return stateOut;
 }
 
 /**
@@ -502,13 +481,9 @@ function createViewMatrix()
     const zNear = (distance - b) / 2;
     const projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
 
-    //distance = cameraControls.distance.getValue();
     // Camera position in the clip space.
     const cameraPosition = [0, 0, distance];
     const up = [0, 1, 0];
-    //up[0] = MathUtils.cosd(guiControls.upLat) * MathUtils.cosd(guiControls.upLon);
-    //up[2] = MathUtils.cosd(guiControls.upLat) * MathUtils.sind(guiControls.upLon);
-    //up[1] = MathUtils.sind(guiControls.upLat);
 
     const target = [0, 0, 0];
 
