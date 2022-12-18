@@ -635,9 +635,9 @@ function createDerContours(limits, spatialRes, temporalRes)
     const timeGregMin = orbitsjs.timeGregorian(limits.JTmin);
     const timeGregMax = orbitsjs.timeGregorian(limits.JTmax);
     const derJTmin = orbitsjs.timeJulianYmdhms(timeGregMin.year, timeGregMin.month, timeGregMin.mday, 
-        timeGregMin.hour + 1, 0, 0).JT;
+        timeGregMin.hour, 0, 0).JT;
     const derJTmax = orbitsjs.timeJulianYmdhms(timeGregMax.year, timeGregMax.month, timeGregMax.mday, 
-        timeGregMax.hour - 1, 0, 0).JT;
+        timeGregMax.hour, 0, 0).JT;
                     
     const derContours = [];
     let ind_curve = 0;
