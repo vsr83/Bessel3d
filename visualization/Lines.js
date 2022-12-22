@@ -318,7 +318,7 @@ function drawEquator(matrix)
     lineShaders.colorOrbit = guiControls.colorOrbit;
     const pEquator = [];
     // Distance to the object in the visualization space.
-    const D = 0.5 * zFar;
+    const D = 0.5 * camera.zFar;
 
     for (let lon = 0; lon <= 360; lon++)
     {
@@ -356,7 +356,7 @@ function drawEcliptic(matrix, nutPar, JT)
     lineShaders.colorOrbit = guiControls.colorOrbit;
     const pSun = [];
     // Distance to the object in the visualization space.
-    const D = 0.5 * zFar;
+    const D = 0.5 * camera.zFar;
 
     for (let lon = 0; lon <= 360; lon++)
     {
@@ -399,7 +399,7 @@ function drawCentralLine(matrix, lat, lon, rECEFMoon, centralLine)
 {
     if (guiControls.enableAxisLine)
     {
-        const D = 0.5 * zFar;
+        const D = 0.5 * camera.zFar;
         const p = [];
     
         p.push(orbitsjs.vecMul(rECEFMoon, D/orbitsjs.norm(rECEFMoon)));
@@ -479,6 +479,7 @@ function drawContactPoints(matrix, contactPoints)
     drawText(matrix, contactPoints.latLastUmbra, contactPoints.lonLastUmbra+2, 'P3', [255, 255, 255]);
     drawText(matrix, contactPoints.latLastPenumbra, contactPoints.lonLastPenumbra+2, 'P4', [255, 255, 255]);
 }
+
 const charLineMap = {
     '1' : [[0.5, 0.0, 0.5, 1.0]],
     '2' : [[1.0, 0.0, 0.0, 0.0], 

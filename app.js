@@ -1,7 +1,6 @@
 "use strict";
 
 var contourWorker = null;
-
 var gl = null;
 var earthShaders = null;
 var lineShaders = null;
@@ -11,20 +10,15 @@ var pointShaders = null;
 var a = 6378.1370;
 var b = 6356.75231414;
 
-// Camera distance from Earth.
-var distance = 10.0 * a;
-const zFar = 1000000;
-
-// Field of view.
-var fieldOfViewRadians = orbitsjs.deg2Rad(30);
-
-// Rotation.
-var rotX = orbitsjs.deg2Rad(-90);
-var rotY = orbitsjs.deg2Rad(0);
-var rotZ = orbitsjs.deg2Rad(0);
-
-// Delta time (ms) from configuration of date and time.
-var dateDelta = 0;
+// Current state of the camera.
+const camera = {
+    rotX : orbitsjs.deg2Rad(-90),
+    rotY : 0,
+    rotZ : 0,
+    fovRad : orbitsjs.deg2Rad(30),
+    distance : 10.0 * a,
+    zFar : 1000000
+};
 
 gl = canvas.getContext("webgl2");
 if (!gl) 
@@ -42,12 +36,10 @@ lineShaders.init();
 pointShaders = new PointShaders(gl);
 pointShaders.init();
 
-var canvasGlHidden = document.getElementById("canvasGLHidden");
-const glHidden = canvasGlHidden.getContext("webgl2", {preserveDrawingBuffer: true});
-const contoursProgram = compileProgramContours(glHidden);
-initContoursGpu(glHidden, contoursProgram);
-
-let JTstart = orbitsjs.timeJulianTs(new Date()).JT;
+//var canvasGlHidden = document.getElementById("canvasGLHidden");
+//const glHidden = canvasGlHidden.getContext("webgl2", {preserveDrawingBuffer: true});
+//const contoursProgram = compileProgramContours(glHidden);
+//initContoursGpu(glHidden, contoursProgram);
 
 let toFixed = function(num) {
     if (num < 10)
@@ -64,6 +56,7 @@ function createTimestamp(JT)
             + ":" + toFixed(Math.floor(timeGreg.second));
 }
 
+// Load eclipses.
 var startTime = performance.now()
 //const listEclipses = orbitsjs.solarEclipses(2019.75, 2019);
 const listEclipses = orbitsjs.solarEclipses(1900.00, 2100.00);
@@ -74,11 +67,6 @@ console.log(`Eclipse computation took ${endTime - startTime} milliseconds`)
 let eclipseNames = [];
 let eclipseInds = [];
 
-// It is not a good idea to allow loading a new eclipse when drawing of the scene
-// is on-going. Therefore, the new eclipse is load to the variable pendingLoad
-// that is read before next drawing of the scene.
-let pendingLoad = null;
-
 for (let indEclipse = 0; indEclipse < listEclipses.length; indEclipse++)
 {
     const eclipse = listEclipses[indEclipse];
@@ -87,6 +75,11 @@ for (let indEclipse = 0; indEclipse < listEclipses.length; indEclipse++)
     eclipseNames.push(eclipseName);
     eclipseInds[eclipseName] = indEclipse;
 }
+
+// It is not a good idea to allow loading a new eclipse when drawing of the scene
+// is on-going. Therefore, the new eclipse is load to the variable pendingLoad
+// that is read before next drawing of the scene.
+let pendingLoad = null;
 
 // Initialize autocomplete.
 const autoCompleteJS = new autoComplete({
@@ -172,8 +165,9 @@ function loadEclipse(eclipseIn)
     stateOut.limits.JTmin = stateOut.contactPoints.JTfirstPenumbra - 60/1440;
     stateOut.limits.JTax = stateOut.contactPoints.JTlastPenumbra + 60/1440;
 
-    rotZ = orbitsjs.deg2Rad(-90 - stateOut.contactPoints.lonFirstPenumbra);
-    rotX = orbitsjs.deg2Rad(-90 + stateOut.contactPoints.latFirstPenumbra);
+    // Initialize camera rotation to the first contact point.
+    camera.rotZ = orbitsjs.deg2Rad(-90 - stateOut.contactPoints.lonFirstPenumbra);
+    camera.rotX = orbitsjs.deg2Rad(-90 + stateOut.contactPoints.latFirstPenumbra);
 
     JTstart = orbitsjs.timeJulianTs(new Date()).JT;
     return stateOut;
@@ -240,6 +234,7 @@ function computeTarget(JT, state, wgs84)
 
 // Time of the latest time slider input event.
 let sliderTime = null;
+
 // Initial value of the time slider.
 let sliderStartValue = 0;
 const timeSlider = document.getElementById("timeRange");
@@ -254,44 +249,127 @@ timeSlider.addEventListener('input', (event) => {
 // Warp factor during the previous frame.
 let warpFactorPrev = guiControls.warpFactor;
 
-// 
-const prevButton = document.getElementById("buttonPrev");
-const nextButton = document.getElementById("buttonNext");
-nextButton.onclick = function() 
-{
-    pendingLoad = (indEclipse + 1) % listEclipses.length;
-}
-prevButton.onclick = function() 
-{
-    pendingLoad = indEclipse - 1;
-    if (pendingLoad < 0)
-    {
-        pendingLoad = listEclipses.length - 1;
-    }
-}
+// The Julian time corresponding to the (hardware) clock.
+let JTstart = orbitsjs.timeJulianTs(new Date()).JT;
 
 // Eclipse at init.
 let indEclipse = eclipseInds['2019-12-26 (Annular)'];
 let state = loadEclipse(listEclipses[indEclipse]);
 
+let drawing = false;
 requestAnimationFrame(drawScene);
 
-let drawing = false;
+/**
+ * Compute intersection of the Moon-Earth axis with the Earth.
+ * 
+ * @param {*} eclipse 
+ *     The eclipse object.
+ * @param {*} JT 
+ *     Julian time.
+ * @returns WGS84 coordinates of the intersection.
+ */
+function axisIntersection(eclipse, JT)
+{
+   // Besselian elements.
+   const bessel = orbitsjs.besselianSolarWithDelta(state.eclipse, JT, 1/1440);
+   // Compute position on the central line.
+   const centralLineJT = orbitsjs.besselianCentralLine(state.eclipse, bessel, JT);
 
+   // Compute the intersection of the Sun-Moon axis with Earth.
+   const osvFund = {
+       r : [bessel.x, bessel.y, centralLineJT.zeta],
+       v : [0, 0, 0],
+       JT : JT
+   };
+   const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
+   const de = 6378137;
+
+   osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+   const osvPef = orbitsjs.coordTodPef(osvToD);
+   const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
+   const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+
+   return wgs84;
+}
+
+/**
+ * Handle slider updates.
+ * 
+ * @param {*} JT 
+ *      Julian time (simulated).
+ * @param {*} todayJT
+ *      Julian time (hardware).
+ * @param {*} warpFactorNew
+ *      Warp factor when drawing started.
+ */
+function handleSlider(JT, todayJT, warpFactorNew)
+{
+    if (sliderTime == null)
+    {
+        // No user action. Update slider position according to (simulated) time.
+        timeSlider.value = Math.floor(10000 * (JT - state.limits.JTmin)/(state.limits.JTmax - state.limits.JTmin));
+    }
+    else 
+    {
+        if (new Date().getTime() - sliderTime > 1000)
+        {
+            // Assume that slider action has been handled since 1 second has passed 
+            // since user action.
+            sliderTime = null;
+        }
+        else 
+        {
+            // Compute JTstart so that the slider position corresponds to the requested
+            // state of the eclipse.
+
+            // 10000 * (JT - JTmin) / (JTmax - JTmin) = value 
+            // 10000 * (JT - JTmin) = (JTmax - JTmin) * value
+            // JT = JTmin + (JTmax - JTmin) * value / 10000
+            const JTtarget = state.limits.JTmin + (state.limits.JTmax - state.limits.JTmin) 
+                           * timeSlider.value / 10000;
+
+            // JT = warpFactor*(todayJT - JTstart) + JTmin;
+            // (JT - JTmin) / warpFactor = todayJT - JTstart
+            // JTstart = todayJT - (JT - JTmin) / warpFactor
+            JTstart = todayJT - (JTtarget - state.limits.JTmin) / warpFactorNew;
+        }
+    }
+
+    // When time exceeds limit end time of the eclipse, return to the limit 
+    // start time of the eclipse. 
+    if (JT > state.limits.JTmax && sliderTime == null)
+    {
+       JTstart = todayJT;
+    }
+    if (JT < state.limits.JTmin && sliderTime == null)
+    {
+       JTstart = todayJT;
+    }
+}
+
+/**
+ * Draw the scene.
+ * 
+ * @param {*} time 
+ *      Timestamp from requestAnimationFrame (not used).
+ */
 function drawScene(time) 
 {
+    // Do not draw the scene before the textures have been loaded.
     if (earthShaders.numTextures < 2)
     {
         requestAnimationFrame(drawScene);
         return;
     }
 
+    // Load new eclipse if requested.
     if (pendingLoad != null)
     {
         state = loadEclipse(listEclipses[pendingLoad]);
         indEclipse = pendingLoad;   
         pendingLoad = null;   
     }
+
     // Avoid divisions by zero:
     let warpFactorNew = guiControls.warpFactor;
     if (warpFactorNew == 0) {
@@ -305,10 +383,7 @@ function drawScene(time)
 
     gl.useProgram(earthShaders.program);
 
-    // Avoid change to the list during the execution of the method.
-    //const enableList = guiControls.enableList;
-
-
+    // Compute Julian time corresponding to the (hardware) clock.
     let dateNow = new Date();
     let today = null;
     today = new Date(dateNow.getTime());
@@ -317,6 +392,10 @@ function drawScene(time)
     // Compute Julian time.
     if (warpFactorPrev != warpFactorNew)
     {
+        // We need to take into account that the warp factor can change between
+        // two frames. In order to maintain continuity, we need to recompute 
+        // JTstart.
+
         // warp * (todayJT - JTstartnew) = warpPrev * (todayJT - JTstartold) 
         // todayJT - JTstartnew = (warpPrev / warp) * (todayJT - JTstartold)
         // JTstartnew = todayJT - (warpPrev / warp) * (todayJT - JTstartold)
@@ -325,51 +404,15 @@ function drawScene(time)
     }
     warpFactorPrev = warpFactorNew;
 
-    //const JT = orbitsjs.timeJulianTs(today).JT + (JTeclipse - JTstart);
+    // Compute the Julian time taking into account the time warp.
     let JT = warpFactorNew * (todayJT - JTstart) + state.limits.JTmin;
 
-    if (sliderTime == null)
-    {
-        timeSlider.value = Math.floor(10000 * (JT - state.limits.JTmin)/(state.limits.JTmax - state.limits.JTmin));
-    }
-    else 
-    {
-        if (new Date().getTime() - sliderTime > 1000)
-        {
-            sliderTime = null;
-        }
-        else 
-        {
-            // 10000 * (JT - JTmin) / (JTmax - JTmin) = value 
-            // 10000 * (JT - JTmin) = (JTmax - JTmin) * value
-            // JT = JTmin + (JTmax - JTmin) * value / 10000
-            
-            const JTtarget = state.limits.JTmin + (state.limits.JTmax - state.limits.JTmin) 
-                           * timeSlider.value / 10000;
-
-            // JT = warpFactor*(todayJT - JTstart) + JTmin;
-            // (JT - JTmin) / warpFactor = todayJT - JTstart
-            // JTstart = todayJT - (JT - JTmin) / warpFactor
-
-            JTstart = todayJT - (JTtarget - state.limits.JTmin) / warpFactorNew;
-            //console.log(JTstart+ " " + JTtarget);
-        }
-    }
+    // Handle the slider.
+    handleSlider(JT, todayJT, warpFactorNew);
 
     // Compute nutation parameters.
     let T = (JT - 2451545.0)/36525.0;
     let nutPar = orbitsjs.nutationTerms(T);
-
-    // When time exceeds limit end time of the eclipse, return to the limit 
-    // start time of the eclipse. 
-    if (JT > state.limits.JTmax && sliderTime == null)
-    {
-       JTstart = todayJT;
-    }
-    if (JT < state.limits.JTmin && sliderTime == null)
-    {
-       JTstart = todayJT;
-    }
 
     // Update time and contact point captions.
     const timeGreg = orbitsjs.timeGregorian(JT);
@@ -381,35 +424,19 @@ function drawScene(time)
     const dateText = document.getElementById("dateText");
     dateText.innerHTML = dateStr;
 
-    // Besselian elements.
-    const bessel = orbitsjs.besselianSolarWithDelta(state.eclipse, JT, 1/1440);
-    // Compute position on the central line.
-    const centralLineJT = orbitsjs.besselianCentralLine(state.eclipse, bessel, JT);
-
-    // Compute the intersection of the Sun-Moon axis with Earth.
-    const osvFund = {
-        r : [bessel.x, bessel.y, centralLineJT.zeta],
-        v : [0, 0, 0],
-        JT : JT
-    };
-    const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
-    const de = 6378137;
-
-    osvToD.r = orbitsjs.vecMul(osvToD.r, de);
-    const osvPef = orbitsjs.coordTodPef(osvToD);
-    const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
-    const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
+    // WGS84 coordinates of the intersection.
+    const wgs84 = axisIntersection(state.eclipse, JT);
 
     // Compute rotations required to point to the target.
     let {targetRotX, targetRotZ} = computeTarget(JT, state, wgs84);
 
     if (guiControls.lockLonRot)
     {
-        rotZ = targetRotZ;
+        camera.rotZ = targetRotZ;
     }
     if (guiControls.lockLatRot)
     {
-        rotX = targetRotX;
+        camera.rotX = targetRotX;
     }
 
     // Compute position of the Sun and the Moon in the EFI frame for the shader.
@@ -426,6 +453,7 @@ function drawScene(time)
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
 
+    // The view matrix.
     const matrix = createViewMatrix();
 
     // Draw the Earth.
@@ -499,15 +527,14 @@ function drawScene(time)
 function createViewMatrix()
 {
     // Compute the projection matrix.
-    const fieldOfViewRadians = orbitsjs.deg2Rad(guiControls.fov);
+    camera.fovRad = orbitsjs.deg2Rad(guiControls.fov);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const zNear = (distance - b) / 2;
-    const projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
+    const zNear = (camera.distance - b) / 2;
+    const projectionMatrix = m4.perspective(camera.fovRad, aspect, zNear, camera.zFar);
 
     // Camera position in the clip space.
-    const cameraPosition = [0, 0, distance];
+    const cameraPosition = [0, 0, camera.distance];
     const up = [0, 1, 0];
-
     const target = [0, 0, 0];
 
     // Compute the camera's matrix using look at.
@@ -517,15 +544,15 @@ function createViewMatrix()
     const viewMatrix = m4.inverse(cameraMatrix);
     const viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
-    cameraControls.lon.setValue(-90 - orbitsjs.rad2Deg(rotZ));
-    cameraControls.lat.setValue( 90 + orbitsjs.rad2Deg(rotX));
-    cameraControls.distance.setValue(distance);
+    // Update controls.
+    cameraControls.lon.setValue(-90 - orbitsjs.rad2Deg(camera.rotZ));
+    cameraControls.lat.setValue( 90 + orbitsjs.rad2Deg(camera.rotX));
+    cameraControls.distance.setValue(camera.distance);
 
     // Rotate view projection matrix to take into account rotation to target coordinates.
-    var matrix = m4.xRotate(viewProjectionMatrix, rotX);
-    matrix = m4.yRotate(matrix, rotY);
-    matrix = m4.zRotate(matrix, rotZ);
+    var matrix = m4.xRotate(viewProjectionMatrix, camera.rotX);
+    matrix = m4.yRotate(matrix, camera.rotY);
+    matrix = m4.zRotate(matrix, camera.rotZ);
 
     return matrix;
 }
-

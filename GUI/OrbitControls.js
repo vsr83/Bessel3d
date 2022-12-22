@@ -15,8 +15,8 @@ var canvas = document.getElementById("canvas");
 canvas.addEventListener("mousedown", function(e) {
     xStart = e.clientX;
     yStart = e.clientY;
-    dragXStart = -orbitsjs.rad2Deg(rotZ);
-    dragYStart = -orbitsjs.rad2Deg(rotX) - 90;
+    dragXStart = -orbitsjs.rad2Deg(camera.rotZ);
+    dragYStart = -orbitsjs.rad2Deg(camera.rotX) - 90;
 
     canvas.onmousemove = function(m) {
         //console.log(m);
@@ -28,8 +28,8 @@ canvas.addEventListener("mousedown", function(e) {
         if (dragY > 180.0) dragY -= 360.0;
         if (dragY < -180.0) dragY += 360.0;
 
-        rotZ = orbitsjs.deg2Rad(-dragX);
-        rotX = orbitsjs.deg2Rad(-90 - dragY);
+        camera.rotZ = orbitsjs.deg2Rad(-dragX);
+        camera.rotX = orbitsjs.deg2Rad(-90 - dragY);
         
         //cameraControls.lon.setValue(rotZToLon(orbitsjs.rad2Deg(rotZ)));
         //cameraControls.lat.setValue(rotXToLat(orbitsjs.rad2Deg(rotX)));
@@ -45,7 +45,7 @@ canvas.addEventListener("mouseleave", function(e) {
 });
 
 canvas.addEventListener("wheel", function(e) {
-    distance *= (e.deltaY * 0.0001 + 1);
+    camera.distance *= (e.deltaY * 0.0001 + 1);
     //cameraControls.distance.setValue(distance);
 });
 
@@ -56,7 +56,7 @@ function touchMove(e)
         const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, 
         e.touches[0].pageY - e.touches[1].pageY);
 
-        distance = distanceStart * (0.001 * (zoomStart - dist) + 1);
+        camera.distance = distanceStart * (0.001 * (zoomStart - dist) + 1);
         //cameraControls.distance.setValue(distance);
         e.preventDefault();
 
@@ -73,8 +73,8 @@ function touchMove(e)
     if (dragX < -90.0) dragX += 360.0;
     if (dragY < -180.0) dragY += 360.0;
 
-    rotZ = MathUtils.deg2Rad(-dragX);
-    rotX = MathUtils.deg2Rad(-90 - dragY);
+    camera.rotZ = MathUtils.deg2Rad(-dragX);
+    camera.rotX = MathUtils.deg2Rad(-90 - dragY);
     
     //cameraControls.lon.setValue(rotZToLon(MathUtils.rad2Deg(rotZ)));
     //cameraControls.lat.setValue(rotXToLat(MathUtils.rad2Deg(rotX)));
@@ -88,14 +88,14 @@ document.addEventListener("touchstart", function(e) {
     {
         xStart = e.touches[0].clientX;
         yStart = e.touches[0].clientY;
-        dragXStart = -MathUtils.rad2Deg(rotZ);
-        dragYStart = -MathUtils.rad2Deg(rotX) - 90;
+        dragXStart = -MathUtils.rad2Deg(camera.rotZ);
+        dragYStart = -MathUtils.rad2Deg(camera.rotX) - 90.0;
 
         document.addEventListener("touchmove", touchMove, { passive: false });
     }
     if (e.touches.length == 2)
     {
-        distanceStart = distance;
+        distanceStart = camera.distance;
         zoomStart = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, 
             e.touches[0].pageY - e.touches[1].pageY);
         scaling = true;

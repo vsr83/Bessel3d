@@ -25,7 +25,7 @@
      const angDiam = 2 * orbitsjs.atand(rObject / orbitsjs.norm(rEFI));
  
      // Distance to the object in the visualization space.
-     const D = 0.5 * zFar;
+     const D = 0.5 * camera.zFar;
  
      // angDiam = 2 * atand(diameter / (2 * D));
      // <=> diameter / (2 * D) = tand(andDiam/2)
@@ -58,7 +58,7 @@
      {
          const pLine = [];
          // Distance to the object in the visualization space.
-         const D = 0.5 * zFar;
+         const D = 0.5 * camera.zFar;
          let {lat, lon, h} = orbitsjs.coordEfiWgs84(targetPos); 
          pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat+1, lon, 0), 0.001));
          pLine.push(orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat-1, lon, 0), 0.001));
