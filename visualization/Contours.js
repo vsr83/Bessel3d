@@ -792,17 +792,19 @@ function createUmbraContour(latCenter, lonCenter, osvSunEfi, osvMoonEfi)
 {
     let umbraGrid = [];
 
+    const scale = 1.0 / Math.abs(orbitsjs.cosd(latCenter));
+
     let limits = {
-        latMin : latCenter - 2.0, 
-        latMax : latCenter + 2.0,
-        lonMin : lonCenter - 4.0,
-        lonMax : lonCenter + 4.0
+        latMin : latCenter - 2.0 * scale, 
+        latMax : latCenter + 2.0 * scale,
+        lonMin : lonCenter - 6.0 * scale,
+        lonMax : lonCenter + 6.0 * scale
     };
     
-    for (let lat = latCenter - 2.0; lat <= latCenter + 2.01; lat += 0.1)
+    for (let lat = latCenter - 2.0 * scale; lat <= latCenter + 2.01 * scale; lat += 0.1 * scale)
     {
         let umbraRow = [];
-        for (let lon = lonCenter - 4.0; lon <= lonCenter + 4.01; lon += 0.1)
+        for (let lon = lonCenter - 6.0 * scale; lon <= lonCenter + 6.01 * scale; lon += 0.1 * scale)
         {
             const rEnuSun = orbitsjs.coordEfiEnu(osvSunEfi, lat, lon, 0.0).r;
             const rEnuMoon = orbitsjs.coordEfiEnu(osvMoonEfi, lat, lon, 0.0).r;

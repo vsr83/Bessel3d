@@ -497,13 +497,13 @@ function drawScene(time)
     }
 
     // Compute and draw umbra.
-    let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi);
-    const contoursUmbra = orbitsjs.createContours(umbraLimits.lonMin, umbraLimits.lonMax, 
-        umbraLimits.latMin, umbraLimits.latMax, 0.1, umbraGrid, [1.0], [100.0]);
-    const contourPointsUmbra = contourToPoints(contoursUmbra);
-
     if (guiControls.enableUmbra)
     {
+        let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi);
+        const contoursUmbra = orbitsjs.createContours(umbraLimits.lonMin, umbraLimits.lonMax, 
+            umbraLimits.latMin, umbraLimits.latMax, 0.1 / Math.abs(orbitsjs.cosd(wgs84.lat)), umbraGrid, [1.0], [100.0]);
+        const contourPointsUmbra = contourToPoints(contoursUmbra);
+
         lineShaders.colorOrbit = guiControls.colorUmbra;
         for (let indContour = 0; indContour < contourPointsUmbra.length; indContour++)
         {
