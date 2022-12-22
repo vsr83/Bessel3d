@@ -54,7 +54,7 @@ function createState(eclipseData, gridSize, timeStep)
 
     state.limits.JTmin = state.contactPoints.JTfirstPenumbra - 60/1440;
     state.limits.JTax = state.contactPoints.JTlastPenumbra + 60/1440;
-    state.derContours = createDerContours(state.limits, 1.0, timeStep);
+    state.derContours = createDerContours(state.limits, gridSize, timeStep);
     state.contourPointsDer = contourToPoints(state.derContours);
     let {magCaptions, maxCaptions} = createMagCaptions(state.derContours);
     state.magCaptions = magCaptions;
