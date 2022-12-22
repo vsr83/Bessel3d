@@ -65,6 +65,12 @@ guiControls = new function()
     this.upLon = 0.0;
     this.upLat = 90.0;
     this.fov = 10;
+
+    this.computeGrid_4 = true;
+    this.computeGrid_2 = true;
+    this.computeGrid_1 = true;
+    this.computeGrid_0_5 = true;
+    this.computeGrid_0_25 = true;
 }
 
 
@@ -167,5 +173,12 @@ cameraControls.distance = cameraFolder.add(guiControls, 'distance', 6378.1370*1.
 
 const timeFolder = gui.addFolder('Time');
 timeControls.warpFactor = timeFolder.add(guiControls, 'warpFactor', -1000, 1000, 1).name('Warp Factor');
+
+const computationFolder = gui.addFolder('Computation');
+computationFolder.add(guiControls, 'computeGrid_4').name("Grid 4.0");
+computationFolder.add(guiControls, 'computeGrid_2').name("Grid 2.0");
+computationFolder.add(guiControls, 'computeGrid_1').name("Grid 1.0");
+computationFolder.add(guiControls, 'computeGrid_0_5').name("Grid 0.5");
+computationFolder.add(guiControls, 'computeGrid_0_25').name("Grid 0.25");
 
 gui.add(guiControls, 'GitHub');

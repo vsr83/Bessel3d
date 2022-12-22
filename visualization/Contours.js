@@ -683,20 +683,27 @@ function createDerContours(limits, spatialRes, temporalRes)
  *      The temperal resolution in Julian days.
  * @returns Contours.
  */
- function createContours(limits, spatialRes, temporalRes)
- {
-     const gridData = orbitsjs.eclipseMagGrid(limits.JTmin - 10/1440, limits.JTmax + 10/1440,
-                                              temporalRes, 
-                                              limits.lonMin-5, limits.lonMax+5, 
-                                              limits.latMin-5, limits.latMax+5, spatialRes);
- 
-     const contoursMag = orbitsjs.createContours(limits.lonMin-5, limits.lonMax+5, 
-                     limits.latMin-5, limits.latMax+5, 
-                     spatialRes, gridData.magArray, 
-                     [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
-     
-     return contoursMag;
- }
+function createContours(limits, spatialRes, temporalRes)
+{
+    const gridData = orbitsjs.eclipseMagGrid(limits.JTmin - 10/1440, limits.JTmax + 10/1440,
+                                            temporalRes, 
+                                            limits.lonMin-5, limits.lonMax+5, 
+                                            limits.latMin-5, limits.latMax+5, spatialRes);
+
+    const contoursMag = orbitsjs.createContours(limits.lonMin-5, limits.lonMax+5, 
+                    limits.latMin-5, limits.latMax+5, 
+                    spatialRes, gridData.magArray, 
+                    [0.001, 0.2, 0.4, 0.6, 0.8], [100.0]);
+    const contoursMagUmbra = orbitsjs.createContours(limits.lonMin-5, limits.lonMax+5, 
+                    limits.latMin-5, limits.latMax+5, 
+                    spatialRes, gridData.inUmbraArray, 
+                    [1.0], [100.0]);
+        
+    return {
+        contoursMag : contoursMag,
+        contoursMagUmbra : contoursMagUmbra
+    };
+}
 
 function createUmbraContour(centralLine)
 {
@@ -709,12 +716,14 @@ function createUmbraContour(centralLine)
  * 
  * @param {*} matrix
  *      The view matrix. 
- * @param {*} contourPointsGpu 
- *      The contour points from the GPU computation.
- * @param {*} derContours 
- *      The maximum line contours.
+ * @param {*} contourPointsMag
+ *      The contour points for the magnitude.
+ * @param {*} contourPointsMax
+ *      The contour points for the max lines.
+ * @param {*} contourPointsUmbra
+ *      The contour points for the umbra.
  */
-function drawContours(matrix, contourPointsGpu, derContours)
+function drawContours(matrix, contourPointsMag, contourPointsMax, contourPointsUmbra)
 {
     //lineShaders.colorOrbit = [255, 0, 0];
     //lineShaders.setGeometry(umbraPoints);
@@ -732,9 +741,9 @@ function drawContours(matrix, contourPointsGpu, derContours)
     if (guiControls.enableMagContours)
     {
         lineShaders.colorOrbit = guiControls.colorMagContour;
-        for (let indContour = 0; indContour < contourPointsGpu.length; indContour++)
+        for (let indContour = 0; indContour < contourPointsMag.length; indContour++)
         {
-            const points = contourPointsGpu[indContour];
+            const points = contourPointsMag[indContour];
             //console.log(points);
             lineShaders.setGeometry(points);
             lineShaders.draw(matrix);
@@ -744,12 +753,24 @@ function drawContours(matrix, contourPointsGpu, derContours)
     if (guiControls.enableDerContours)
     {
         lineShaders.colorOrbit = guiControls.colorDerContour;
-        for (let indContour = 0; indContour < derContours.length; indContour++)
+        for (let indContour = 0; indContour < contourPointsMax.length; indContour++)
         {
-            const points = derContours[indContour];
+            const points = contourPointsMax[indContour];
             //console.log(points);
             lineShaders.setGeometry(points);
             lineShaders.draw(matrix);
+        }
+    }
+
+    if (true)
+    {
+        lineShaders.colorOrbit = [255, 0, 0];
+        for (let indContour = 0; indContour < contourPointsUmbra.length; indContour++)
+        {
+            const points = contourPointsUmbra[indContour];
+            //console.log(points);
+            lineShaders.setGeometry(points);
+            //lineShaders.draw(matrix);
         }
     }
 }

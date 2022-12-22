@@ -18,9 +18,6 @@ const zFar = 1000000;
 // Field of view.
 var fieldOfViewRadians = orbitsjs.deg2Rad(30);
 
-let rotZToLon = (rotZ) => {return (-90 - rotZ);}
-let rotXToLat = (rotX) => {return (90 + rotX);}
-
 // Rotation.
 var rotX = orbitsjs.deg2Rad(-90);
 var rotY = orbitsjs.deg2Rad(0);
@@ -76,6 +73,10 @@ console.log(`Eclipse computation took ${endTime - startTime} milliseconds`)
 
 let eclipseNames = [];
 let eclipseInds = [];
+
+// It is not a good idea to allow loading a new eclipse when drawing of the scene
+// is on-going. Therefore, the new eclipse is load to the variable pendingLoad
+// that is read before next drawing of the scene.
 let pendingLoad = null;
 
 for (let indEclipse = 0; indEclipse < listEclipses.length; indEclipse++)
@@ -112,20 +113,40 @@ const autoCompleteJS = new autoComplete({
     }
 });
 
+/**
+ * Load an eclipse. The method generates state without the contour data and then
+ * calls a worker thread that computes the contours. State is reinitialized 
+ * whenever the worker thread has generated curves.
+ * 
+ * @param {*} eclipseIn 
+ *     Eclipse object.
+ * @returns State object.
+ */
 function loadEclipse(eclipseIn)
 {
+    // Terminate a contour worker if one is already running.
     if (contourWorker != null)
     {
         contourWorker.terminate();
     }
 
+    // Create a contour worker for computation of the state.
     contourWorker = new Worker("computation/ContourWorker.js");
     contourWorker.addEventListener('message', function(e) {
         console.log("Worker has provided data.");
         state = e.data;
     }, false);
     
-    contourWorker.postMessage(eclipseIn);
+    contourWorker.postMessage({
+        eclipse : eclipseIn,
+        computeGrid_4 : guiControls.computeGrid_4,
+        computeGrid_2 : guiControls.computeGrid_2,
+        computeGrid_1 : guiControls.computeGrid_1,
+        computeGrid_0_5 : guiControls.computeGrid_0_5,
+        computeGrid_0_25 : guiControls.computeGrid_0_25,
+    });
+
+    // Generate a state without the contour curves.
     const stateOut = {};
     stateOut.eclipse = eclipseIn;
 
@@ -137,11 +158,13 @@ function loadEclipse(eclipseIn)
     stateOut.contours = null;
     stateOut.limits = {JTmin : stateOut.eclipse.JTmax - 5/24, JTmax : stateOut.eclipse.JTmax + 5/24};    
     stateOut.limits = computeLimits(stateOut.eclipse, 4.0, 5.0/1440.0);
-    stateOut.contours = [];    
+    stateOut.contours = [];   
+    stateOut.contourPointsUmbra = [] 
+    stateOut.umbraContours = [];
     stateOut.contourPointsDer = [];    
     stateOut.centralLine = computeCentralLine(stateOut.eclipse, stateOut.limits, 3/1440);
     stateOut.riseSetPoints = computeRiseSet(stateOut.eclipse, stateOut.limits, 3/3000);
-    stateOut.contourPointsGpu = contourToPoints(stateOut.contours);
+    stateOut.contourPointsMag = contourToPoints(stateOut.contours);
     stateOut.magCaptions = [];
     stateOut.maxCaptions = [];
     stateOut.contactPoints = computeFirstLastContact(stateOut.eclipse, stateOut.limits);    
@@ -434,7 +457,7 @@ function drawScene(time)
     drawEquator(matrix);
 
     // Draw magnitude contours.
-    drawContours(matrix, state.contourPointsGpu, state.contourPointsDer);
+    drawContours(matrix, state.contourPointsMag, state.contourPointsDer, state.contourPointsUmbra);
 
     if (guiControls.enableMagContours)
     {
