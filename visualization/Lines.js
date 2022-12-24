@@ -267,39 +267,94 @@ function computeFirstLastContact(eclipse, limits)
  *      The timestep.
  * @returns Array of points in EFI frame (km).
  */
-function computeRiseSet(eclipse, limits, timeStep)
+function computeRiseSet(eclipse, limits, contactPoints, timeStep)
 {
+    const riseSetPointsStart = [];
+    const riseSetPointsEnd = [];
     const riseSetPoints = [];
+    const nutPar = orbitsjs.nutationTerms((limits.JTmin - 2451545.0) / 36525.0);
+
+    function coordFundEfi(r, bessel, JT)
+    {
+        const de = 6378137;
+        const osvFund2 = {r: r, v : [0, 0, 0], JT : JT};
+        const osvToD2 = orbitsjs.coordFundTod(osvFund2, bessel.a, bessel.d);
+        osvToD2.r = orbitsjs.vecMul(osvToD2.r, de);
+        const osvPef2 = orbitsjs.coordTodPef(osvToD2);
+        const osvEfi2 = orbitsjs.coordPefEfi(osvPef2, 0, 0);
+
+        return osvEfi2.r;
+    }
 
     for (let JT = limits.JTmin - limits.temporalRes; JT < limits.JTmax + limits.temporalRes; JT += timeStep)
     {
         const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
         const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
         const points = orbitsjs.besselianRiseSet(bessel);
+
+        const osvSunEfiPlus = orbitsjs.computeOsvSunEfi(JT + 1/24, nutPar);
     
         if (points.length > 0)
         {
-            const de = 6378137;
-            const osvFund2 = {r: [points[0][0], points[0][1], 0], v : [0, 0, 0], JT : JT};
-            const osvToD2 = orbitsjs.coordFundTod(osvFund2, bessel.a, bessel.d);
-            osvToD2.r = orbitsjs.vecMul(osvToD2.r, de);
-            const osvPef2 = orbitsjs.coordTodPef(osvToD2);
-            const osvEfi2 = orbitsjs.coordPefEfi(osvPef2, 0, 0);
-            const wgs842 = orbitsjs.coordEfiWgs84(osvEfi2.r);
+            const rEfi = coordFundEfi([points[0][0], points[0][1], 0], bessel, JT);
+            const rEfi2 = coordFundEfi([points[1][0], points[1][1], 0], bessel, JT);
+            const rEfiPlus = coordFundEfi([points[0][0], points[0][1], 0], bessel, JT + 1/24);
+            const rEfi2Plus = coordFundEfi([points[1][0], points[1][1], 0], bessel, JT+ 1/24);
     
-            const osvFund3 = {r: [points[1][0], points[1][1], 0], v : [0, 0, 0], JT : JT};
-            const osvToD3 = orbitsjs.coordFundTod(osvFund3, bessel.a, bessel.d);
-            osvToD3.r = orbitsjs.vecMul(osvToD3.r, de);
-            const osvPef3 = orbitsjs.coordTodPef(osvToD3);
-            const osvEfi3 = orbitsjs.coordPefEfi(osvPef3, 0, 0);
-            const wgs843 = orbitsjs.coordEfiWgs84(osvEfi3.r);
-    
-            riseSetPoints.push(orbitsjs.vecMul(osvEfi2.r, 0.001));
-            riseSetPoints.push(orbitsjs.vecMul(osvEfi3.r, 0.001));
+            const wgs84 = orbitsjs.coordEfiWgs84(rEfi);
+            const wgs842 = orbitsjs.coordEfiWgs84(rEfi2);
+            const sunEnu = orbitsjs.coordEfiEnu(osvSunEfiPlus, wgs84.lat, wgs84.lon, 0.0);
+            const sunEnu2 = orbitsjs.coordEfiEnu(osvSunEfiPlus, wgs842.lat, wgs842.lon, 0.0);
+
+            if (sunEnu.r[2] > 0.0)
+            {
+                riseSetPointsStart.push(orbitsjs.vecMul(rEfi, 0.001));
+            }
+            else 
+            {
+                riseSetPointsEnd.push(orbitsjs.vecMul(rEfi, 0.001));                
+            }
+            if (sunEnu2.r[2] > 0.0)
+            {
+                riseSetPointsStart.push(orbitsjs.vecMul(rEfi2, 0.001));
+            }
+            else 
+            {
+                riseSetPointsEnd.push(orbitsjs.vecMul(rEfi2, 0.001));
+            }
         }
     }
 
-    return riseSetPoints;
+    const riseSetPoints2 = [];
+
+    for (let indPoint = 0; indPoint < riseSetPointsStart.length/2-1; indPoint++)
+    {
+        riseSetPoints2.push(riseSetPointsStart[indPoint*2]);
+        riseSetPoints2.push(riseSetPointsStart[indPoint*2 + 2]);
+        if (riseSetPointsStart[indPoint*2 +3] === undefined) continue;
+        riseSetPoints2.push(riseSetPointsStart[indPoint*2 + 1]);
+        riseSetPoints2.push(riseSetPointsStart[indPoint*2 + 3]);
+    }
+    riseSetPoints2.push(riseSetPointsStart[0]);
+    riseSetPoints2.push(riseSetPointsStart[1]);
+    riseSetPoints2.push(riseSetPointsStart[riseSetPointsStart.length-2]);
+    riseSetPoints2.push(riseSetPointsStart[riseSetPointsStart.length-1]);
+
+    for (let indPoint = 0; indPoint < riseSetPointsEnd.length/2-1; indPoint++)
+    {
+        riseSetPoints2.push(riseSetPointsEnd[indPoint*2]);
+        riseSetPoints2.push(riseSetPointsEnd[indPoint*2 + 2]);
+        if (riseSetPointsEnd[indPoint*2 +3] === undefined) continue;
+        riseSetPoints2.push(riseSetPointsEnd[indPoint*2 + 1]);
+        riseSetPoints2.push(riseSetPointsEnd[indPoint*2 + 3]);
+    }
+    riseSetPoints2.push(riseSetPointsEnd[0]);
+    riseSetPoints2.push(riseSetPointsEnd[1]);
+    riseSetPoints2.push(riseSetPointsEnd[riseSetPointsEnd.length-2]);
+    riseSetPoints2.push(riseSetPointsEnd[riseSetPointsEnd.length-1]);
+
+
+    return riseSetPoints2;
 }
 
 /**

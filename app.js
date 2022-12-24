@@ -156,11 +156,11 @@ function loadEclipse(eclipseIn)
     stateOut.umbraContours = [];
     stateOut.contourPointsDer = [];    
     stateOut.centralLine = computeCentralLine(stateOut.eclipse, stateOut.limits, 3/1440);
-    stateOut.riseSetPoints = computeRiseSet(stateOut.eclipse, stateOut.limits, 3/3000);
+    stateOut.contactPoints = computeFirstLastContact(stateOut.eclipse, stateOut.limits);    
+    stateOut.riseSetPoints = computeRiseSet(stateOut.eclipse, stateOut.limits, stateOut.contactPoints,  3/3000);
     stateOut.contourPointsMag = contourToPoints(stateOut.contours);
     stateOut.magCaptions = [];
     stateOut.maxCaptions = [];
-    stateOut.contactPoints = computeFirstLastContact(stateOut.eclipse, stateOut.limits);    
 
     stateOut.limits.JTmin = stateOut.contactPoints.JTfirstPenumbra - 60/1440;
     stateOut.limits.JTax = stateOut.contactPoints.JTlastPenumbra + 60/1440;

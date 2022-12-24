@@ -45,10 +45,10 @@ function createState(eclipseData, gridSize, timeStep)
     state.limits.temporalRes = 1/1440;
         
     state.centralLine = computeCentralLine(state.eclipse, state.limits, timeStep);
-    state.riseSetPoints = computeRiseSet(state.eclipse, state.limits, timeStep);
     state.contourPointsMag = contourToPoints(state.contours);
     state.contourPointsUmbra = contourToPoints(state.umbraContours);
     state.contactPoints = computeFirstLastContact(state.eclipse, state.limits);    
+    state.riseSetPoints = computeRiseSet(state.eclipse, state.limits, state.contactPoints, timeStep/4.0);
 
     console.log(state.contourPointsUmbra);
 
