@@ -343,7 +343,10 @@ function handleSlider(JT, todayJT, warpFactorNew)
     }
     if (JT < state.limits.JTmin && sliderTime == null)
     {
-       JTstart = todayJT;
+       //JTstart = todayJT;
+       //JT = warpFactor*(todayJT - JTstart) + JTmin = JTmax
+       // (JTmax - JTmin)/warpFactor = todayJT - JTstart
+       JTstart = todayJT - (state.limits.JTmax - state.limits.JTmin) / warpFactorNew;
     }
 }
 

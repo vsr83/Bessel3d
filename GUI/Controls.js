@@ -172,7 +172,7 @@ cameraControls.lat = cameraFolder.add(guiControls, 'lat', -180, 180, 0.1).name('
 cameraControls.distance = cameraFolder.add(guiControls, 'distance', 6378.1370*1.01, 1000000, 100).name('Distance');
 
 const timeFolder = gui.addFolder('Time');
-timeControls.warpFactor = timeFolder.add(guiControls, 'warpFactor', -1000, 1000, 1).name('Warp Factor');
+timeControls.warpFactor = timeFolder.add(guiControls, 'warpFactor', -10000, 10000, 1).name('Warp Factor');
 
 const computationFolder = gui.addFolder('Computation');
 computationFolder.add(guiControls, 'computeGrid_4').name("Grid 4.0");
