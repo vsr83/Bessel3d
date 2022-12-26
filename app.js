@@ -466,6 +466,7 @@ function drawScene(time)
         guiControls.enableGrid, 
         guiControls.enableMap, 
         guiControls.enableEclipse, 
+        true,
         osvMoonEfi.r, 
         osvSunEfi.r);
 

@@ -39,7 +39,7 @@
      let targetMatrix = m4.translate(matrix, targetPos[0], targetPos[1], targetPos[2]);
      targetMatrix = m4.scale(targetMatrix, scale, scale, scale);
  
-     earthShaders.draw(targetMatrix, false, false, false, false);
+     earthShaders.draw(targetMatrix, false, false, false, false, false);
 
      if (drawSubline)
      {

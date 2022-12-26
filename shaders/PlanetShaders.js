@@ -601,10 +601,12 @@ class PlanetShaders
      *      Whether to draw the map.
      * @param {*} showEclipse
      *      Draw the eclipse.
+     * @param {*} showSun
+     *      Draw the Sun altitude.
      * @param {*} rECEFMoon
      *      ECEF coordinates of the Moon.
      */
-    draw(viewMatrix, drawTexture, drawGrid, drawMap, showEclipse, rECEFMoon, rECEFSun)
+    draw(viewMatrix, drawTexture, drawGrid, drawMap, showEclipse, drawSun, rECEFMoon, rECEFSun)
     {
         if (this.numTextures < 2)
         {
@@ -646,18 +648,21 @@ class PlanetShaders
             gl.uniform1f(grayscaleLocation, 0);
         }
 
-        if (showEclipse)
+        if (drawSun)
         {
             const diamAngSun = 2 * orbitsjs.atand(696340000.0 / orbitsjs.norm(rECEFSun));
-
-            gl.uniform1f(showEclipseLocation, 1);
-            gl.uniform1f(moonXLocation, rECEFMoon[0]);
-            gl.uniform1f(moonYLocation, rECEFMoon[1]);
-            gl.uniform1f(moonZLocation, rECEFMoon[2]);
             gl.uniform1f(sunXLocation, rECEFSun[0] / orbitsjs.norm(rECEFSun));
             gl.uniform1f(sunYLocation, rECEFSun[1] / orbitsjs.norm(rECEFSun));
             gl.uniform1f(sunZLocation, rECEFSun[2] / orbitsjs.norm(rECEFSun));
             gl.uniform1f(sunDiamLocation, diamAngSun);
+        }
+
+        if (showEclipse)
+        {
+            gl.uniform1f(moonXLocation, rECEFMoon[0]);
+            gl.uniform1f(moonYLocation, rECEFMoon[1]);
+            gl.uniform1f(moonZLocation, rECEFMoon[2]);
+            gl.uniform1f(showEclipseLocation, 1);
         }
         else
         {
