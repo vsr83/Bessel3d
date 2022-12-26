@@ -175,18 +175,18 @@ class PlanetShaders
             vec3 coordECEFSun = vec3(u_sun_x, u_sun_y, u_sun_z);
             vec3 coordECEFMoon = vec3(u_moon_x, u_moon_y, u_moon_z);
 
-            if (u_draw_texture)
-            {
-                float lon = 2.0 * PI * (v_texcoord.x - 0.5);
-                float lat = PI * (0.5 - v_texcoord.y);
-                float longitude = rad2deg(lon);
-                float latitude  = rad2deg(lat);
-        
-                // Surface coordinates.
-                vec3 obsECEF = coordWgs84Efi(latitude, longitude, 0.0);
-                vec3 coordSunENU = coordEfiEnu(coordECEFSun, latitude, longitude, 0.0, false);
-                float altitude = rad2deg(asin(coordSunENU.z / length(coordSunENU)));
+            float lon = 2.0 * PI * (v_texcoord.x - 0.5);
+            float lat = PI * (0.5 - v_texcoord.y);
+            float longitude = rad2deg(lon);
+            float latitude  = rad2deg(lat);
     
+            // Surface coordinates.
+            vec3 obsECEF = coordWgs84Efi(latitude, longitude, 0.0);
+            vec3 coordSunENU = coordEfiEnu(coordECEFSun, latitude, longitude, 0.0, false);
+            float altitude = rad2deg(asin(coordSunENU.z / length(coordSunENU)));
+
+            if (u_draw_texture)
+            {    
                 if (altitude > 0.0)
                 {
                     // Day. 
@@ -236,7 +236,45 @@ class PlanetShaders
             }
             else 
             {
-                outColor = vec4(1.0, 1.0, 1.0, 1.0);
+                if (altitude > 0.0)
+                {
+                    // Day. 
+                    outColor = u_texture_brightness * vec4(1.0, 1.0, 1.0, 1.0);
+                }
+                else if (altitude > -6.0)
+                {
+                    // Civil twilight.
+                    outColor = u_texture_brightness * vec4(0.8, 0.8, 0.8, 1.0);
+                }
+                else if (altitude > -12.0)
+                {
+                    // Nautical twilight.
+                    outColor = u_texture_brightness * vec4(0.6, 0.6, 0.6, 1.0);
+                }
+                else if (altitude > -18.0)
+                {
+                    // Astronomical twilight.
+                    outColor = u_texture_brightness * vec4(0.4, 0.4, 0.4, 1.0);
+                }
+                else
+                {
+                    // Night.
+                    outColor = u_texture_brightness * vec4(0.2, 0.2, 0.2, 1.0);
+                }
+
+                if (u_show_eclipse && altitude > 0.0)
+                {
+                    vec3 coordDiffMoon = coordECEFMoon - obsECEF;
+                    float dotP = dot(coordDiffMoon, coordECEFSun);
+                    float distMoon = length(coordDiffMoon);
+                    float angularDiamMoon = 2.0 * rad2deg(atan((R_MOON) / (distMoon)));
+                    float angleDiff = rad2deg(acos(dotP / distMoon));
+
+                    if (angleDiff < 0.5 * (u_sun_diam + angularDiamMoon))
+                    {
+                        outColor = u_texture_brightness * vec4(0.5, 0.5, 0.5, 1.0);
+                    }
+                }
             }
 
             if (u_grayscale)

@@ -621,10 +621,10 @@ function drawContactPoints(matrix, contactPoints)
     lineShaders.setGeometry(p);
     lineShaders.draw(matrix);
 
-    drawText(matrix, contactPoints.latFirstPenumbra, contactPoints.lonFirstPenumbra+2, 'P1', [255, 255, 255]);
-    drawText(matrix, contactPoints.latFirstUmbra, contactPoints.lonFirstUmbra+2, 'P2', [255, 255, 255]);
-    drawText(matrix, contactPoints.latLastUmbra, contactPoints.lonLastUmbra+2, 'P3', [255, 255, 255]);
-    drawText(matrix, contactPoints.latLastPenumbra, contactPoints.lonLastPenumbra+2, 'P4', [255, 255, 255]);
+    drawText(matrix, contactPoints.latFirstPenumbra, contactPoints.lonFirstPenumbra+2, 'P1', guiControls.colorText);
+    drawText(matrix, contactPoints.latFirstUmbra, contactPoints.lonFirstUmbra+2, 'P2', guiControls.colorText);
+    drawText(matrix, contactPoints.latLastUmbra, contactPoints.lonLastUmbra+2, 'P3', guiControls.colorText);
+    drawText(matrix, contactPoints.latLastPenumbra, contactPoints.lonLastPenumbra+2, 'P4', guiControls.colorText);
 }
 
 const charLineMap = {
