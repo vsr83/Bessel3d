@@ -1,3 +1,27 @@
+
+/**
+ * Coordinate transform between fundamental and EFI frames.
+ * 
+ * @param {*} r 
+ *      Position vector in the fundamental frame.
+ * @param {*} bessel 
+ *      Besselian elements.
+ * @param {*} JT 
+ *      Julian time.
+ * @returns Position in EFI frame.
+ */
+function coordFundEfi(r, bessel, JT, nutParams)
+{
+    const de = 6378137;
+    const osvFund2 = {r: r, v : [0, 0, 0], JT : JT};
+    const osvToD2 = orbitsjs.coordFundTod(osvFund2, bessel.a, bessel.d);
+    osvToD2.r = orbitsjs.vecMul(osvToD2.r, de);
+    const osvPef2 = orbitsjs.coordTodPef(osvToD2, nutParams);
+    const osvEfi2 = orbitsjs.coordPefEfi(osvPef2, 0, 0);
+
+    return osvEfi2.r;
+}
+
 /**
  * Compute Besselian central line.
  * 
@@ -167,7 +191,7 @@ function computeFirstLastContact(eclipse, limits)
     }
     if (!isNaN(JTfirstUmbra))
     {
-        for (let JT = JTfirstUmbra - 2/1440; JT <= JTfirstUmbra; JT += 1/86400)
+        for (let JT = JTfirstUmbra - 2/1440; JT <= JTfirstUmbra; JT += 0.1/86400)
         {
             const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
             const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
@@ -211,7 +235,7 @@ function computeFirstLastContact(eclipse, limits)
     }
     if (!isNaN(JTlastUmbra))
     {
-        for (let JT = JTlastUmbra + 2/1440; JT >= JTlastUmbra; JT -= 1/86400)
+        for (let JT = JTlastUmbra + 2/1440; JT >= JTlastUmbra; JT -= 0.1/86400)
         {
             const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
             const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
@@ -258,6 +282,77 @@ function computeFirstLastContact(eclipse, limits)
     };
 }
 
+function computeMax(eclipse, limits, contactPoints, timeStep)
+{
+    const T = (limits.JTmin - 2451545.0)/36525.0;
+    const nutPar = orbitsjs.nutationTerms(T);
+    const lineRise = [];
+    const lineSet = [];
+    const deltaAngle = 0.1;
+
+    for (let JT = limits.JTmin - limits.temporalRes; JT < limits.JTmax + limits.temporalRes; JT += timeStep)
+    {
+        const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
+
+        const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JT, nutPar)
+        const osvSunEfi = orbitsjs.computeOsvSunEfi(JT, nutPar)        
+        const osvMoonEfiPlus = orbitsjs.computeOsvMoonEfi(JT + 1/1440.0, nutPar)
+        const osvSunEfiPlus = orbitsjs.computeOsvSunEfi(JT + 1/1440.0, nutPar)        
+    
+        let prevDer = Math.NaN;
+
+        for (let angle = 0; angle <= 360; angle += deltaAngle)
+        {
+            const rEfi = coordFundEfi(
+                [orbitsjs.cosd(angle), orbitsjs.sind(angle), 0], bessel, JT, nutPar);
+            const wgs84 = orbitsjs.coordEfiWgs84(rEfi);
+
+            const rEnuSun = orbitsjs.coordEfiEnu(osvSunEfi, wgs84.lat, wgs84.lon, 0.0).r;
+            const rEnuMoon = orbitsjs.coordEfiEnu(osvMoonEfi, wgs84.lat, wgs84.lon, 0.0).r;
+            const rEnuSunPlus = orbitsjs.coordEfiEnu(osvSunEfiPlus, wgs84.lat, wgs84.lon, 0.0).r;
+            const rEnuMoonPlus = orbitsjs.coordEfiEnu(osvMoonEfiPlus, wgs84.lat, wgs84.lon, 0.0).r;
+            
+            const mag = orbitsjs.eclipseMagnitude(rEnuSun, rEnuMoon).mag;
+            const magPlus = orbitsjs.eclipseMagnitude(rEnuSunPlus, rEnuMoonPlus).mag;
+
+            const magDer = magPlus - mag;
+
+            if (angle > 0 && Math.sign(magDer) != Math.sign(prevDer) && mag > 0.005)
+            {
+                if (rEnuSunPlus[2] > rEnuSun[2])
+                {
+                    lineRise.push(orbitsjs.vecMul(rEfi, 0.001001));
+                }
+                else 
+                {
+                    lineSet.push(orbitsjs.vecMul(rEfi, 0.001001));
+                }
+            }
+
+            prevDer = magDer;
+        }
+    }
+
+    lineSet.sort(function(a, b){return a[2] - b[2]});
+    lineRise.sort(function(a, b){return a[2] - b[2]});
+
+    const lineSetOut = [];
+    const lineRiseOut = [];
+
+    for (let indSet = 0; indSet < lineSet.length-1; indSet++)
+    {
+        lineSetOut.push(lineSet[indSet]);
+        lineSetOut.push(lineSet[indSet + 1]);
+    }
+    for (let indRise = 0; indRise < lineRise.length-1; indRise++)
+    {
+        lineRiseOut.push(lineRise[indRise]);
+        lineRiseOut.push(lineRise[indRise + 1]);
+    }
+
+    return [lineSetOut, lineRiseOut];
+}
+
 /**
  * Compute rise and set curves.
  * 
@@ -274,18 +369,6 @@ function computeRiseSet(eclipse, limits, contactPoints, timeStep)
     const riseSetPoints = [];
     const nutPar = orbitsjs.nutationTerms((limits.JTmin - 2451545.0) / 36525.0);
 
-    function coordFundEfi(r, bessel, JT)
-    {
-        const de = 6378137;
-        const osvFund2 = {r: r, v : [0, 0, 0], JT : JT};
-        const osvToD2 = orbitsjs.coordFundTod(osvFund2, bessel.a, bessel.d);
-        osvToD2.r = orbitsjs.vecMul(osvToD2.r, de);
-        const osvPef2 = orbitsjs.coordTodPef(osvToD2);
-        const osvEfi2 = orbitsjs.coordPefEfi(osvPef2, 0, 0);
-
-        return osvEfi2.r;
-    }
-
     for (let JT = limits.JTmin - limits.temporalRes; JT < limits.JTmax + limits.temporalRes; JT += timeStep)
     {
         const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/1440);
@@ -296,10 +379,10 @@ function computeRiseSet(eclipse, limits, contactPoints, timeStep)
     
         if (points.length > 0)
         {
-            const rEfi = coordFundEfi([points[0][0], points[0][1], 0], bessel, JT);
-            const rEfi2 = coordFundEfi([points[1][0], points[1][1], 0], bessel, JT);
-            const rEfiPlus = coordFundEfi([points[0][0], points[0][1], 0], bessel, JT + 1/24);
-            const rEfi2Plus = coordFundEfi([points[1][0], points[1][1], 0], bessel, JT+ 1/24);
+            const rEfi = coordFundEfi([points[0][0], points[0][1], 0], bessel, JT, nutPar);
+            const rEfi2 = coordFundEfi([points[1][0], points[1][1], 0], bessel, JT, nutPar);
+            const rEfiPlus = coordFundEfi([points[0][0], points[0][1], 0], bessel, JT + 1/24, nutPar);
+            const rEfi2Plus = coordFundEfi([points[1][0], points[1][1], 0], bessel, JT+ 1/24, nutPar);
     
             const wgs84 = orbitsjs.coordEfiWgs84(rEfi);
             const wgs842 = orbitsjs.coordEfiWgs84(rEfi2);
@@ -479,14 +562,23 @@ function drawCentralLine(matrix, lat, lon, rECEFMoon, centralLine)
  *      The view matrix.
  * @param {*} riseSetPoints 
  *      The rise and set points.
+ * @param {*} maxLinePoints
+ *      Maximum eclipse at sunrise/sunset.
  */
-function drawRiseSet(matrix, riseSetPoints)
+function drawRiseSet(matrix, riseSetPoints, maxLinePoints)
 {
     if (guiControls.enableRiseSet)
     {
         lineShaders.colorOrbit = guiControls.colorRiseSet;
         lineShaders.setGeometry(riseSetPoints);
         lineShaders.draw(matrix);
+
+        lineShaders.colorOrbit = guiControls.colorMaxRiseSet;
+        lineShaders.setGeometry(maxLinePoints[0]);
+        lineShaders.draw(matrix);
+        lineShaders.setGeometry(maxLinePoints[1]);
+        lineShaders.draw(matrix);
+    
     }
 }
 

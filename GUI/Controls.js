@@ -44,6 +44,7 @@ guiControls = new function()
     this.colorDerContour = [127, 127, 127];
     this.colorSubsolar = [255, 255, 255];
     this.colorSublunar = [255, 255, 255];
+    this.colorMaxRiseSet = [255, 255, 255];
 
     this.enableRiseSet = true; 
     this.enableContact = true; 
@@ -158,6 +159,7 @@ appearanceFolder.addColor(guiControls, 'colorContact').name('Contact Points');
 appearanceFolder.addColor(guiControls, 'colorCentral').name('Central Line');
 appearanceFolder.addColor(guiControls, 'colorOrbit').name('Orbits');
 appearanceFolder.addColor(guiControls, 'colorRiseSet').name('Rise/Set Lines');
+appearanceFolder.addColor(guiControls, 'colorMaxRiseSet').name('Rise/Set Max');
 appearanceFolder.addColor(guiControls, 'colorMagContour').name('Mag. Contours');
 appearanceFolder.addColor(guiControls, 'colorDerContour').name('Max. Contours');
 appearanceFolder.addColor(guiControls, 'colorSubsolar').name('Subsolar Point');

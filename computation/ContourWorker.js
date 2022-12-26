@@ -49,8 +49,9 @@ function createState(eclipseData, gridSize, timeStep)
     state.contourPointsUmbra = contourToPoints(state.umbraContours);
     state.contactPoints = computeFirstLastContact(state.eclipse, state.limits);    
     state.riseSetPoints = computeRiseSet(state.eclipse, state.limits, state.contactPoints, timeStep/4.0);
+    state.maxLinePoints = computeMax(state.eclipse, state.limits, state.contactPoints, timeStep/4.0);
 
-    console.log(state.contourPointsUmbra);
+    console.log(state.maxLinePoints);
 
     state.limits.JTmin = state.contactPoints.JTfirstPenumbra - 60/1440;
     state.limits.JTax = state.contactPoints.JTlastPenumbra + 60/1440;

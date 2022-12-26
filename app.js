@@ -161,6 +161,7 @@ function loadEclipse(eclipseIn)
     stateOut.contourPointsMag = contourToPoints(stateOut.contours);
     stateOut.magCaptions = [];
     stateOut.maxCaptions = [];
+    stateOut.maxLinePoints = [[], []];
 
     stateOut.limits.JTmin = stateOut.contactPoints.JTfirstPenumbra - 60/1440;
     stateOut.limits.JTax = stateOut.contactPoints.JTlastPenumbra + 60/1440;
@@ -478,7 +479,7 @@ function drawScene(time)
 
     // Draw curves.
     drawCentralLine(matrix, wgs84.lat, wgs84.lon, osvMoonEfi.r, state.centralLine);
-    drawRiseSet(matrix, state.riseSetPoints);
+    drawRiseSet(matrix, state.riseSetPoints, state.maxLinePoints);
 
     // Draw contact points.
     drawContactPoints(matrix, state.contactPoints);
