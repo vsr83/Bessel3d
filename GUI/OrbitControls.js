@@ -107,3 +107,11 @@ document.addEventListener("touchend", function(e) {
     document.removeEventListener("touchmove", touchMove);
     scaling = false;
 });
+
+document.body.onkeyup = function(e) 
+{
+    if (e.key == " " || e.key == "Space" || e.key == 32)
+    {
+        timeControls.pause.setValue(!guiControls.pause);
+    }
+}

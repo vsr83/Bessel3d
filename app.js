@@ -253,6 +253,7 @@ let warpFactorPrev = guiControls.warpFactor;
 
 // The Julian time corresponding to the (hardware) clock.
 let JTstart = orbitsjs.timeJulianTs(new Date()).JT;
+let JTprev = undefined;
 
 // Eclipse at init.
 let indEclipse = eclipseInds['2019-12-26 (Annular)'];
@@ -407,10 +408,21 @@ function drawScene(time)
         JTstart = todayJT - (warpFactorPrev / warpFactorNew)
                 * (todayJT - JTstart);
     }
+
+    // If paused, update JTstart so that the time does not change.
+    if (guiControls.pause && sliderTime == null)
+    {
+        // warpFactorNew * (todayJT - JTstart) + state.limits.JTmin = JTprev;
+        // (JTprev - JTmin) / warpFactorNew = todayJT - JTstart
+
+        JTstart = todayJT - (JTprev - state.limits.JTmin) / warpFactorNew;
+    }
+
     warpFactorPrev = warpFactorNew;
 
     // Compute the Julian time taking into account the time warp.
     let JT = warpFactorNew * (todayJT - JTstart) + state.limits.JTmin;
+    JTprev = JT;
 
     // Handle the slider.
     handleSlider(JT, todayJT, warpFactorNew);
@@ -515,7 +527,7 @@ function drawScene(time)
         const contoursUmbra = orbitsjs.createContours(umbraLimits.lonMin, umbraLimits.lonMax, 
             umbraLimits.latMin, umbraLimits.latMax, 0.1 / Math.abs(orbitsjs.cosd(wgs84.lat)), umbraGrid, [1.0], [100.0]);
         const contourPointsUmbra = contourToPoints(contoursUmbra);
-        
+
         lineShaders.colorOrbit = guiControls.colorUmbraContour;
         for (let indContour = 0; indContour < contourPointsUmbra.length; indContour++)
         {

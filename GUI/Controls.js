@@ -115,6 +115,8 @@ guiControls = new function()
     this.computeGrid_0_5 = true;
     this.computeGrid_0_25 = true;
 
+    this.pause = false;
+
     this.presetDefaults = function()
     {
         loadPreset(presetDefaults);
@@ -356,6 +358,7 @@ cameraControls.distance = cameraFolder.add(guiControls, 'distance', 6378.1370*1.
 
 const timeFolder = gui.addFolder('Time');
 timeControls.warpFactor = timeFolder.add(guiControls, 'warpFactor', -10000, 10000, 1).name('Warp Factor');
+timeControls.pause = timeFolder.add(guiControls, 'pause').name("Pause");
 
 const computationFolder = gui.addFolder('Computation');
 computationFolder.add(guiControls, 'computeGrid_4').name("Grid 4.0");
