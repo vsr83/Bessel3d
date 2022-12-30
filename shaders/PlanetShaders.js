@@ -221,6 +221,13 @@ class PlanetShaders
                     float angularDiamMoon = 2.0 * rad2deg(atan((R_MOON) / (distMoon)));
                     float angleDiff = rad2deg(acos(dotP / distMoon));
 
+                    // GPU arithmetic is not very accurate and can lead to situation, where the following
+                    // condition is true.
+                    if (dotP / distMoon > 1.0)
+                    {
+                        angleDiff = 0.0;
+                    }
+
                     // The shader arithmetic is not accurate enough for the drawing of the 
                     // umbral shadow.
                     //if (dotP / distMoon >= 1.0 || angleDiff <= 0.5 * abs(u_sun_diam - angularDiamMoon))
