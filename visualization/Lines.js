@@ -34,6 +34,8 @@ function coordFundEfi(r, bessel, JT, nutParams)
 function computeCentralLine(eclipse, limits, timeStep)
 {
     const centralLine = [];
+    const T = (limits.JTmin - 2451545.0)/36525.0;
+    const nutPar = orbitsjs.nutationTerms(T);
 
     for (let JT = limits.JTmin - limits.temporalRes; JT < limits.JTmax + limits.temporalRes; JT += timeStep)
     {
@@ -47,19 +49,167 @@ function computeCentralLine(eclipse, limits, timeStep)
                 v : [0, 0, 0],
                 JT : JT
             };
-            const osvToD = orbitsjs.coordFundTod(osvFund, bessel.a, bessel.d);
-            const de = 6378137;
-    
-            osvToD.r = orbitsjs.vecMul(osvToD.r, de);
-            const osvPef = orbitsjs.coordTodPef(osvToD);
-            const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
-            const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
-    
-            centralLine.push(orbitsjs.vecMul(osvEfi.r, 0.001));
+            const rEfi = coordFundEfi(osvFund.r, bessel, JT, nutPar);
+            centralLine.push(orbitsjs.vecMul(rEfi, 0.001));
         }
     }
 
     return centralLine;
+}
+
+/**
+ * Compute umbral line.
+ * 
+ * @param {*} eclipse 
+ *      Solar eclipse.
+ * @param {*} limits 
+ *      Limits object.
+ * @param {*} contactPoints
+ *      Computed contact points.
+ * @param {*} timeStep
+ *      Time step.
+ */
+function computeUmbraLine(eclipse, limits, contactPoints, timeStep)
+{
+    const centralLine = [];
+    const T = (limits.JTmin - 2451545.0)/36525.0;
+    const nutPar = orbitsjs.nutationTerms(T);
+
+    const pointsMin = [];
+    const pointsMax = [];
+
+    let JTvalues = [];
+    
+    if (!isNaN(contactPoints.JTfirstUmbra))
+    {
+        JTvalues.push(contactPoints.JTfirstUmbra + 2/86400);
+        JTvalues.push(contactPoints.JTfirstUmbra + 12/86400);
+    }
+    else 
+    {
+        return [];
+    }
+
+    for (let JT = limits.JTmin - limits.temporalRes; JT < limits.JTmax + limits.temporalRes;)
+    {
+        const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/86400);
+        const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+
+        if (!isNaN(centralLineJT.zeta))
+        {
+            JTvalues.push(JT);
+            JT += timeStep * 5 * centralLineJT.zeta + 1/86400.0;
+        }
+        else
+        {
+            JT += timeStep;
+        }
+    }
+    if (!isNaN(contactPoints.JTlastUmbra))
+    {
+        JTvalues.push(contactPoints.JTlastUmbra - 22/86400);
+        JTvalues.push(contactPoints.JTlastUmbra - 2/86400);
+    }
+
+
+    for (let indJT = 0; indJT < JTvalues.length; indJT++)
+    {
+        JT = JTvalues[indJT];
+
+        const bessel = orbitsjs.besselianSolarWithDelta(eclipse, JT, 1/86400);
+        const centralLineJT = orbitsjs.besselianCentralLine(eclipse, bessel, JT);
+
+        const besselPlus = orbitsjs.besselianSolarWithDelta(eclipse, JT + 1/86400, 1/86400);
+        const centralLineJTPlus = orbitsjs.besselianCentralLine(eclipse, besselPlus, JT + 1/1440);
+    
+        if (!isNaN(centralLineJT.zeta) && !isNaN(centralLineJTPlus.zeta))
+        {                       
+            const rFund = [bessel.x, bessel.y, centralLineJT.zeta];
+            const rFundPlus = [besselPlus.x, besselPlus.y, centralLineJTPlus.zeta];
+            const rEfi = coordFundEfi(rFund, bessel, JT, nutPar);
+            const rEfiPlus = coordFundEfi(rFundPlus, besselPlus, JT + 1/86400, nutPar);
+            const wgs84 = orbitsjs.coordEfiWgs84(rEfi);
+            const wgs84Plus = orbitsjs.coordEfiWgs84(rEfiPlus);
+
+            let wgs84Dir = [wgs84Plus.lat - wgs84.lat, wgs84Plus.lon - wgs84.lon, 0.0];
+            const degPerMin = orbitsjs.norm(wgs84Dir);
+            wgs84Dir = orbitsjs.vecMul(wgs84Dir, 1/degPerMin);
+            const orthDir = [wgs84Dir[1], -wgs84Dir[0], 0];
+
+            //console.log(degPerMin);
+
+            const osvMoonEfi = orbitsjs.computeOsvMoonEfi(JT, nutPar)
+            const osvSunEfi = orbitsjs.computeOsvSunEfi(JT, nutPar)        
+            let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi, 0.025);
+
+            const latCenter = wgs84.lat; 
+            const lonCenter = wgs84.lon;
+            const scale = 1.0 / Math.abs(orbitsjs.cosd(latCenter));
+
+            let indLat = 0;
+            let latMax = -180;
+            let latMin = 180;
+            let pointMax = undefined;
+            let pointMin = undefined;
+
+            for (let lat = latCenter - 2.0 * scale; lat <= latCenter + 2.01 * scale; lat += 0.025 * scale)
+            {
+                let indLon = 0;
+                let umbraRow = [];
+                for (let lon = lonCenter - 6.0 * scale; lon <= lonCenter + 6.01 * scale; lon += 0.025 * scale)
+                {
+                    if (umbraGrid[indLat][indLon] != 0)
+                    {
+                       // console.log(lat + " "+ lon);
+
+                        let dist = orbitsjs.dot([lat - latCenter, lon - lonCenter, 0], orthDir);
+
+                        if (dist > latMax)
+                        {
+                            latMax = dist;
+                            pointMax = orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon, 20000), 0.001);
+                        }
+                        if (dist < latMin)
+                        {
+                            latMin = dist;
+                            pointMin = orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon, 20000), 0.001);
+                        }
+                    }
+
+                    indLon++;
+                }
+                indLat++;
+            }
+
+            if (!(pointMin === undefined))
+            {
+                pointsMin.push(pointMin);
+            }
+            if (!(pointMax === undefined))
+            {
+                pointsMax.push(pointMax);
+            }
+        }
+    }
+
+    const lines = [];
+
+    for (let indPoint = 0; indPoint < pointsMin.length - 1; indPoint++)
+    {
+        lines.push(pointsMin[indPoint]);
+        lines.push(pointsMin[indPoint + 1]);
+    }
+    for (let indPoint = 0; indPoint < pointsMax.length - 1; indPoint++)
+    {
+        lines.push(pointsMax[indPoint]);
+        lines.push(pointsMax[indPoint + 1]);
+    }
+    lines.push(pointsMax[0]);
+    lines.push(pointsMin[0]);
+    lines.push(pointsMax[pointsMax.length - 1]);
+    lines.push(pointsMin[pointsMin.length - 1]);
+
+    return lines;
 }
 
 /**

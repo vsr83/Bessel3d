@@ -35,6 +35,7 @@ function loadPreset(data)
     appearanceControls.colorMap.setValue(data.colorMap)
     appearanceControls.colorText.setValue(data.colorText);
     appearanceControls.colorUmbra.setValue(data.colorUmbra);
+    appearanceControls.colorUmbraContour.setValue(data.colorUmbraContour);
     appearanceControls.colorContact.setValue(data.colorContact);
     appearanceControls.colorCentral.setValue(data.colorCentral);
     appearanceControls.colorOrbit.setValue(data.colorOrbit);
@@ -57,6 +58,7 @@ guiControls = new function()
     this.enableEquator = true;
     this.enableEclipse = true;
     this.enableUmbra = true;
+    this.enableUmbraContour = true;
     this.enableConstellations = false;
     this.enableTextures = true; 
     this.enableSubsolar = true;
@@ -78,6 +80,7 @@ guiControls = new function()
     this.colorContact = [255, 255, 255];
     this.colorOrbit = [127, 127, 127];
     this.colorUmbra = [255, 0, 0];
+    this.colorUmbraContour = [255, 255, 0];
     this.colorRiseSet = [0, 255, 0];
     this.colorMagContour = [127, 127, 127];
     this.colorDerContour = [127, 127, 127];
@@ -136,6 +139,7 @@ const presetBw = {
     "enableEquator":true,
     "enableEclipse":false,
     "enableUmbra":true,
+    "enableUmbraContour":true,
     "enableConstellations":false,
     "enableTextures":false,
     "enableSubsolar":true,
@@ -156,6 +160,7 @@ const presetBw = {
     "colorContact":[2.5,0,0],
     "colorOrbit":[127,127,127],
     "colorUmbra":[0,0,0],
+    "colorUmbraContour":[0,0,0],
     "colorRiseSet":[0,0,0],
     "colorMagContour":[15.0,0,0],
     "colorDerContour":[127,127,127],
@@ -193,6 +198,7 @@ const presetGrayscale =
     "enableEquator":true,
     "enableEclipse":true,
     "enableUmbra":true,
+    "enableUmbraContour":true,
     "enableConstellations":false,
     "enableTextures":true,
     "enableSubsolar":true,
@@ -213,6 +219,7 @@ const presetGrayscale =
     "colorContact":[255,255,255],
     "colorOrbit":[127,127,127],
     "colorUmbra":[255,0,0],
+    "colorUmbraContour":[255,255,0],
     "colorRiseSet":[255,255,255],
     "colorMagContour":[127,127,127],
     "colorDerContour":[127,127,127],
@@ -249,6 +256,7 @@ const visibilityFolder = gui.addFolder('Visibility');
 displayControls.enableMap = visibilityFolder.add(guiControls, 'enableMap').name('Map Lines');
 displayControls.enableEclipse = visibilityFolder.add(guiControls, 'enableEclipse').name('Penumbra');
 displayControls.enableUmbra = visibilityFolder.add(guiControls, 'enableUmbra').name('Umbra');
+displayControls.enableUmbraContour = visibilityFolder.add(guiControls, 'enableUmbraContour').name('Umbra Contour');
 displayControls.enableMagContours = visibilityFolder.add(guiControls, 'enableMagContours').name('Mag. Contours');
 
 displayControls.enableDerContours = visibilityFolder.add(guiControls, 'enableDerContours').name('Max. Contours');
@@ -323,6 +331,7 @@ appearanceControls.colorMap = appearanceFolder.addColor(guiControls, 'colorMap')
 });
 appearanceControls.colorText = appearanceFolder.addColor(guiControls, 'colorText').name('Text');
 appearanceControls.colorUmbra = appearanceFolder.addColor(guiControls, 'colorUmbra').name('Umbra');
+appearanceControls.colorUmbraContour = appearanceFolder.addColor(guiControls, 'colorUmbraContour').name('Umbra Contour');
 appearanceControls.colorContact = appearanceFolder.addColor(guiControls, 'colorContact').name('Contact Points');
 appearanceControls.colorCentral = appearanceFolder.addColor(guiControls, 'colorCentral').name('Central Line');
 appearanceControls.colorOrbit = appearanceFolder.addColor(guiControls, 'colorOrbit').name('Orbits');

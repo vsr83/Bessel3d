@@ -156,6 +156,7 @@ function loadEclipse(eclipseIn)
     stateOut.umbraContours = [];
     stateOut.contourPointsDer = [];    
     stateOut.centralLine = computeCentralLine(stateOut.eclipse, stateOut.limits, 3/1440);
+    stateOut.umbraLine = [];
     stateOut.contactPoints = computeFirstLastContact(stateOut.eclipse, stateOut.limits);    
     stateOut.riseSetPoints = computeRiseSet(stateOut.eclipse, stateOut.limits, stateOut.contactPoints,  3/3000);
     stateOut.contourPointsMag = contourToPoints(stateOut.contours);
@@ -504,12 +505,18 @@ function drawScene(time)
     // Compute and draw umbra.
     if (guiControls.enableUmbra)
     {
-        let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi);
+        lineShaders.colorOrbit = guiControls.colorUmbra;
+        lineShaders.setGeometry(state.umbraLine);
+        lineShaders.draw(matrix);
+    }
+    if (guiControls.enableUmbraContour)
+    {
+        let {umbraGrid, umbraLimits} = createUmbraContour(wgs84.lat, wgs84.lon, osvSunEfi, osvMoonEfi, 0.1);
         const contoursUmbra = orbitsjs.createContours(umbraLimits.lonMin, umbraLimits.lonMax, 
             umbraLimits.latMin, umbraLimits.latMax, 0.1 / Math.abs(orbitsjs.cosd(wgs84.lat)), umbraGrid, [1.0], [100.0]);
         const contourPointsUmbra = contourToPoints(contoursUmbra);
-
-        lineShaders.colorOrbit = guiControls.colorUmbra;
+        
+        lineShaders.colorOrbit = guiControls.colorUmbraContour;
         for (let indContour = 0; indContour < contourPointsUmbra.length; indContour++)
         {
             const points = contourPointsUmbra[indContour];

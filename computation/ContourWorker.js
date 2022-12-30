@@ -48,6 +48,7 @@ function createState(eclipseData, gridSize, timeStep)
     state.contourPointsMag = contourToPoints(state.contours);
     state.contourPointsUmbra = contourToPoints(state.umbraContours);
     state.contactPoints = computeFirstLastContact(state.eclipse, state.limits);    
+    state.umbraLine = computeUmbraLine(state.eclipse, state.limits, state.contactPoints, timeStep);
     state.riseSetPoints = computeRiseSet(state.eclipse, state.limits, state.contactPoints, timeStep/4.0);
     state.maxLinePoints = computeMax(state.eclipse, state.limits, state.contactPoints, timeStep/4.0);
 

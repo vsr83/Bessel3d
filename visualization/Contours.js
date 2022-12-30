@@ -788,7 +788,7 @@ function drawContours(matrix, contourPointsMag, contourPointsMax, contourPointsU
  *     OSV for the Moon in the EFI frame.
  * @returns Boolean grid and limits for the umbra.
  */
-function createUmbraContour(latCenter, lonCenter, osvSunEfi, osvMoonEfi)
+function createUmbraContour(latCenter, lonCenter, osvSunEfi, osvMoonEfi, spatialStep)
 {
     let umbraGrid = [];
 
@@ -801,10 +801,10 @@ function createUmbraContour(latCenter, lonCenter, osvSunEfi, osvMoonEfi)
         lonMax : lonCenter + 6.0 * scale
     };
     
-    for (let lat = latCenter - 2.0 * scale; lat <= latCenter + 2.01 * scale; lat += 0.1 * scale)
+    for (let lat = latCenter - 2.0 * scale; lat <= latCenter + 2.01 * scale; lat += spatialStep * scale)
     {
         let umbraRow = [];
-        for (let lon = lonCenter - 6.0 * scale; lon <= lonCenter + 6.01 * scale; lon += 0.1 * scale)
+        for (let lon = lonCenter - 6.0 * scale; lon <= lonCenter + 6.01 * scale; lon += spatialStep * scale)
         {
             const rEnuSun = orbitsjs.coordEfiEnu(osvSunEfi, lat, lon, 0.0).r;
             const rEnuMoon = orbitsjs.coordEfiEnu(osvMoonEfi, lat, lon, 0.0).r;
