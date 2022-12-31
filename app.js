@@ -20,6 +20,8 @@ const camera = {
     zFar : 1000000
 };
 
+const diffUTCTDT = 60.0/86400.0;
+
 gl = canvas.getContext("webgl2");
 if (!gl) 
 {
@@ -288,6 +290,7 @@ function axisIntersection(eclipse, JT)
    const de = 6378137;
 
    osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+   osvToD.JT = orbitsjs.correlationTdbUt1(osvToD.JT);
    const osvPef = orbitsjs.coordTodPef(osvToD);
    const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
    const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);

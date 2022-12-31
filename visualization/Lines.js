@@ -10,10 +10,11 @@
  *      Julian time.
  * @returns Position in EFI frame.
  */
-function coordFundEfi(r, bessel, JT, nutParams)
+function coordFundEfi(r, bessel, JTtdb, nutParams)
 {
     const de = 6378137;
-    const osvFund2 = {r: r, v : [0, 0, 0], JT : JT};
+    const JTut1 = orbitsjs.correlationTdbUt1(JTtdb);
+    const osvFund2 = {r: r, v : [0, 0, 0], JT : JTut1};
     const osvToD2 = orbitsjs.coordFundTod(osvFund2, bessel.a, bessel.d);
     osvToD2.r = orbitsjs.vecMul(osvToD2.r, de);
     const osvPef2 = orbitsjs.coordTodPef(osvToD2, nutParams);
@@ -105,12 +106,12 @@ function computeUmbraLine(eclipse, limits, contactPoints, timeStep)
             JT += timeStep;
         }
     }
+
     if (!isNaN(contactPoints.JTlastUmbra))
     {
         JTvalues.push(contactPoints.JTlastUmbra - 22/86400);
         JTvalues.push(contactPoints.JTlastUmbra - 2/86400);
     }
-
 
     for (let indJT = 0; indJT < JTvalues.length; indJT++)
     {
@@ -175,7 +176,6 @@ function computeUmbraLine(eclipse, limits, contactPoints, timeStep)
                             pointMin = orbitsjs.vecMul(orbitsjs.coordWgs84Efi(lat, lon, 20000), 0.001);
                         }
                     }
-
                     indLon++;
                 }
                 indLat++;
@@ -272,6 +272,7 @@ function computeFirstLastContact(eclipse, limits)
                 const de = 6378137;
             
                 osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+                osvToD.JT = orbitsjs.correlationTdbUt1(osvToD.JT);
                 const osvPef = orbitsjs.coordTodPef(osvToD);
                 const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
                 const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
@@ -316,6 +317,7 @@ function computeFirstLastContact(eclipse, limits)
                 const de = 6378137;
             
                 osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+                osvToD.JT = orbitsjs.correlationTdbUt1(osvToD.JT);
                 const osvPef = orbitsjs.coordTodPef(osvToD);
                 const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
                 const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
@@ -360,6 +362,7 @@ function computeFirstLastContact(eclipse, limits)
                 const de = 6378137;
         
                 osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+                osvToD.JT = orbitsjs.correlationTdbUt1(osvToD.JT);
                 const osvPef = orbitsjs.coordTodPef(osvToD);
                 const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
                 const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
@@ -404,6 +407,7 @@ function computeFirstLastContact(eclipse, limits)
                 const de = 6378137;
         
                 osvToD.r = orbitsjs.vecMul(osvToD.r, de);
+                osvToD.JT = orbitsjs.correlationTdbUt1(osvToD.JT);
                 const osvPef = orbitsjs.coordTodPef(osvToD);
                 const osvEfi = orbitsjs.coordPefEfi(osvPef, 0, 0);
                 const wgs84 = orbitsjs.coordEfiWgs84(osvEfi.r);
