@@ -271,12 +271,14 @@ requestAnimationFrame(drawScene);
  *     The eclipse object.
  * @param {*} JT 
  *     Julian time.
+ * @param {*} nutParams
+ *     Nutation parameters. Computed, if undefined.
  * @returns WGS84 coordinates of the intersection.
  */
-function axisIntersection(eclipse, JT)
+function axisIntersection(eclipse, JT, nutParams)
 {
    // Besselian elements.
-   const bessel = orbitsjs.besselianSolarWithDelta(state.eclipse, JT, 1/1440);
+   const bessel = orbitsjs.besselianSolarWithDelta(state.eclipse, JT, 1/1440, nutParams);
    // Compute position on the central line.
    const centralLineJT = orbitsjs.besselianCentralLine(state.eclipse, bessel, JT);
 
