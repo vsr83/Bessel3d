@@ -139,7 +139,7 @@ const presetBw = {
     "enableDerContours":true,
     "enableEcliptic":true,
     "enableEquator":true,
-    "enableEclipse":false,
+    "enableEclipse":true,
     "enableUmbra":true,
     "enableUmbraContour":true,
     "enableConstellations":false,
