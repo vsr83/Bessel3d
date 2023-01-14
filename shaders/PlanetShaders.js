@@ -277,6 +277,13 @@ class PlanetShaders
                     float angularDiamMoon = 2.0 * rad2deg(atan((R_MOON) / (distMoon)));
                     float angleDiff = rad2deg(acos(dotP / distMoon));
 
+                    // GPU arithmetic is not very accurate and can lead to situation, where the following
+                    // condition is true.
+                    if (dotP / distMoon > 1.0)
+                    {
+                        angleDiff = 0.0;
+                    }
+
                     if (angleDiff < 0.5 * (u_sun_diam + angularDiamMoon))
                     {
                         outColor = u_texture_brightness * vec4(0.5, 0.5, 0.5, 1.0);
